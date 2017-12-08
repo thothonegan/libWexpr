@@ -1,0 +1,9 @@
+@(
+	package "libWexpr"
+	buildMethod "catalyst"
+
+	dependencies #(
+		@(type "repository" name "Catalyst")
+	)
+)
+

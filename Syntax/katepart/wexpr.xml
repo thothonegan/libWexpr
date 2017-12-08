@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE language SYSTEM "language.dtd">
+<language name="Wolf Expressions" section="Wolf" version="1.0.0" kateversion="2.3" extensions="*.wexpr" mimetype="" author="Kenneth Perry (thothonegan@gmail.com)" license="MIT">
+	<highlighting>
+		<list name="Constants">
+			<item>null</item>
+			<item>true</item>
+			<item>false</item>
+		</list>
+		
+		<contexts>
+			<!-- start of document -->
+			<context name="Normal" lineEndContext="#stay" attribute="styleNormal">
+				<DetectChar char="(" context="#stay" attribute="styleBracket" beginRegion="Paren1"/>
+				<DetectChar char=")" context="#stay" attribute="styleBracket" endRegion="Paren1" />
+				<DetectChar char="@" context="#stay" attribute="styleMap" />
+				<DetectChar char="#" context="#stay" attribute="styleArray" />
+				<DetectChar char="&quot;" context="String" attribute="styleString" />
+				
+				<StringDetect attribute="styleComment" context="CommentRegion" String=";(-" beginRegion="Comment" />
+				<RegExpr attribute="styleComment" context="CommentLine" String=";" beginRegion="Comment" />
+
+				<keyword String="Constants" attribute="styleConstant" context="#stay" />
+
+				<Int attribute="styleDecimal" context="#stay" />
+				<Float attribute="styleFloat" context="#stay" />
+
+			</context>
+		
+			<context name="String" lineEndContext="#stay" attribute="styleString">
+				<DetectChar attribute="styleString" context="#pop" char="&quot;" />
+			</context>
+
+			<context attribute="styleComment" lineEndContext="#pop" name="CommentLine">
+				<LineContinue attribute="styleComment" context="#stay" />
+				<IncludeRules context="##Alerts" />
+			</context>
+
+			<context attribute="styleComment" lineEndContext="#stay" name="CommentRegion">
+				<StringDetect attribute="styleComment" context="#pop" String="--)" endRegion="Comment" />
+				<IncludeRules context="##Alerts" />
+			</context>
+
+			<!-- map list -->
+		</contexts>
+		
+		<itemDatas>
+			<itemData name="styleNormal"   defStyleNum="dsNormal" />
+			<itemData name="styleConstant" defStyleNum="dsKeyword" />
+			<itemData name="styleBracket"  defStyleNum="dsNormal" color="#0000ff" selColor="#00ff00" bold="1" italic="0" />
+			<itemData name="styleMap"      defStyleNum="dsNormal"  color="#006666" selColor="#00ff00" bold="1" italic="0" />
+			<itemData name="styleArray"    defStyleNum="dsNormal"  color="#006666" selColor="#00ff00" bold="1" italic="0" />
+			<itemData name="styleString"   defStyleNum="dsString" />
+			<itemData name="styleComment"  defStyleNum="dsComment" />
+			<itemData name="styleDecimal"  defStyleNum="dsDecVal" />
+			<itemData name="styleFloat"    defStyleNum="dsFloat" />
+		</itemDatas>
+	</highlighting>
+	
+	<general>
+		<comments>
+			<comment name="singleLine" start=";" />
+			<keywords casesensitive="1" />
+		</comments>
+	</general>
+</language>

@@ -1,0 +1,31 @@
+# Build directories
+/Build-*
+
+# MacOSX files
+.DS_Store
+
+# Backup files
+*~
+.*.swo
+.*.swp
+.*.bak
+.*.kate-swp
+.*.kate-bak
+.swp
+
+# KDevelop
+/.kdev4
+*.kdev4
+
+# Kate project temp
+/.kateproject.d/
+
+# Dolphin
+.directory
+
+# CLion / IDEA
+.idea/
+
+# Windows thumbs
+Thumbs.db
+

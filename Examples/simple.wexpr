@@ -1,0 +1,54 @@
+#(
+	; This is a comment. Goes to the end of the line
+	
+	;(--
+		This is a block comment. It goes to the next - -) found.
+		For code, putting another ; makes it easy to enable/disable the section.
+	;--)
+	
+	; This is a value quoted. 
+	"Hi I'm a value!"
+	
+	; If your value has no special characters or whitespace, you can also create a value unquoted.
+	Value
+	
+	; Values can also be numbers and booleans, or anything really UTF-8 safe.
+	; Values themselves are just strings are are interpreted by the program, so all of these
+	; are just more values.
+	2.0
+	true
+	false
+	null
+	
+	; An array is a set of expressions with whitespace between them 
+	; It uses #(). Ordering then is well defined.
+	#(1 2 3 4 5)
+	
+	; A map is a set of key-value pairs with whitespace between them
+	; It uses @(). Ordering is not defined, but key value association is guaranteed.
+	; At the moment, key is required to be a value.
+	@(a 1 b 2 c 3) ; a=1, b=2, c=3
+	
+	; generally you'll write them more like this for readability:
+	; you can also combine types as you'd expect.
+	@(
+		red   #(255 0 0)
+		green #(0 255 0)
+		blue  #(0 0 255)
+	)
+	
+	; References allow you to associate a name with a value
+	; which you can then refer to farther in the file
+	@(
+		; [name] creates a reference to the next object with the given name
+		; can have any name, even if the same as the structure itself
+		defaultColor  [defaultColor]#(128 128 128) ; [defaultColor] is now #(128 128 128)
+		
+		; then if you want to use it, you do *[name]
+		primaryColor *[defaultColor] ; primaryColor is #(128 128 128)
+	)
+	
+	; A file / wexpr expression can only contain one expression. In this file, we
+	; made it an array #() so we can just list values without much of a format.
+	; Generally you'll either use #() (array) or @() (map) as your main expression.
+)

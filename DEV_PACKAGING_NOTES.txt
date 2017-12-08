@@ -1,0 +1,5 @@
+Release/Packaging notes:
+- change version in libWexpr.h
+- change version in Syntax/katepart/wexpr.xml
+- add version to github
+- mark tag for gitlab

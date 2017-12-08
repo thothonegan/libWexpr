@@ -1,0 +1,10 @@
+{
+	"name" : "libWexpr",
+	"type" : "cmodule",
+	"license" : {
+		"type" : "mit",
+		"files" : [
+			"LICENSE"
+		]
+	}
+}
