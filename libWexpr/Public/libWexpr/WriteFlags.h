@@ -1,6 +1,6 @@
 //
-/// \file libWexpr/ParseFlags.h
-/// \brief Parsing flags for Wexpr
+/// \file libWexpr/WriteFlags.h
+/// \brief Writing flags for Wexpr
 //
 // #LICENSE_BEGIN:MIT#
 // 
@@ -28,8 +28,8 @@
 // #LICENSE_END#
 //
 
-#ifndef LIBWEXPR_PARSEFLAGS_H
-#define LIBWEXPR_PARSEFLAGS_H
+#ifndef LIBWEXPR_WRITEFLAGS_H
+#define LIBWEXPR_WRITEFLAGS_H
 
 #include "Macros.h"
 
@@ -38,16 +38,16 @@
 LIBWEXPR_EXTERN_C_BEGIN()
 
 //
-/// \brief These flags alter parsing of wexpr on load.
+/// \brief These flags alter writing of wexpr strings.
 //
-typedef uint8_t WexprParseFlags;
+typedef int8_t WexprWriteFlags;
 
 enum
 {
-	WexprParseFlagNone = 0, ///< No special flags
-	// flags are bitflags (0 << 1), (0 << 2), etc
+	WexprWriteFlagNone = 0, ///< No special flags
+	WexprWriteFlagHumanReadable = (1 << 0), ///< Instead of trying to compress down, will add newlines and indentation to make it more readable.
 };
 
 LIBWEXPR_EXTERN_C_END()
 
-#endif // LIBWEXPR_PARSEFLAGS_H
+#endif // LIBWEXPR_WRITEFLAGS_H

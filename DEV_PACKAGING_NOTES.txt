@@ -1,4 +1,5 @@
 Release/Packaging notes:
+- regen licenses as needed
 - change version in libWexpr.h
 - change version in Syntax/katepart/wexpr.xml
 - add version to github

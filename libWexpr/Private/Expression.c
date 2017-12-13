@@ -30,6 +30,7 @@
 
 #include <libWexpr/Expression.h>
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
@@ -106,6 +107,16 @@ static PrivateStringRef s_StringRef_create (const char* str)
 	PrivateStringRef res = {
 		str,
 		strlen(str)
+	};
+	
+	return res;
+}
+
+static PrivateStringRef s_stringRef_createFromPointerSize (const char* str, size_t size)
+{
+	PrivateStringRef res = {
+		str,
+		size
 	};
 	
 	return res;
@@ -707,6 +718,268 @@ static int s_freeHashData (any_t userData, any_t data)
 	return MAP_OK; // keep iterating
 }
 
+static size_t s_byteSizeForIndent (size_t indent)
+{
+	return indent; // one \t just costs one byte
+}
+
+void s_fillIndent (char* buffer, size_t indent)
+{
+	for (size_t i=0; i < indent; ++i)
+		buffer[i] = '\t';
+}
+
+// --------------------- PRIVATE ----------------------------------
+
+// should have no room for the null pointer. append at end
+// NOTE THESE BUFFERS ARE ACTUALLY MUTABLE AND WE'RE PASSING AROUND MALLOC OWNED ADDRESSES.
+//
+// Human Readablle notes:
+// even though you pass an indent, we assume you're already indented for the start of the object
+// we assume this so that an object for example as a key-value will be writen in the correct spot.
+// if it writes multiple lines, we will use the given indent to predict.
+// it will end after writing all data, no newline generally at the end.
+//
+// Note that ownership moves around the PrivateStringRefs automatically.
+static PrivateStringRef p_wexpr_Expression_appendStringRepresentationToAllocatedBuffer (WexprExpression* self, WexprWriteFlags flags, size_t indent, PrivateStringRef strBuffer)
+{
+	
+	bool writeHumanReadable = ((flags & WexprWriteFlagHumanReadable) == WexprWriteFlagHumanReadable);
+	WexprExpressionType type = wexpr_Expression_type(self);
+	
+	char* buffer = (char*) strBuffer.ptr;
+	size_t curBufferSize = strBuffer.size;
+	
+	if (type == WexprExpressionTypeNull)
+	{
+		fprintf (stderr, "p_wexpr_Expression_appendStringRepresentationToAllocatedBuffer() - Cannot represent a null expression.\n");
+		abort();
+	}
+	
+	else if (type == WexprExpressionTypeValue)
+	{
+		// value - always write directly
+		
+		const char* value = wexpr_Expression_value(self);
+		size_t len = strlen(value);
+		
+		PrivateWexprValueStringProperties props = s_wexprValueStringProperties(
+			s_StringRef_create(value)
+		);
+		
+		char* newBuffer = buffer;
+		size_t newSize = curBufferSize + len + (props.isBarewordSafe ? 0 : 2); // add quotes if needed
+		newBuffer = realloc (newBuffer, newSize);
+		
+		// copy the value, taking into account quotes or not
+		strncpy (newBuffer+curBufferSize + (props.isBarewordSafe ? 0 : 1), value, len);
+		
+		if (!props.isBarewordSafe)
+		{
+			// add quotes
+			newBuffer[curBufferSize] = '\"';
+			newBuffer[newSize-1] = '\"';
+		}
+		
+		return s_stringRef_createFromPointerSize(newBuffer, newSize);
+	}
+	
+	else if (type == WexprExpressionTypeArray)
+	{
+		size_t arraySize = wexpr_Expression_arrayCount(self);
+		
+		if (arraySize == 0)
+		{
+			// straightforward, always empty structure
+			size_t newSize = curBufferSize + 3;
+			char* newBuffer = realloc(buffer, newSize);
+			strncpy (newBuffer+curBufferSize, "#()", 3);
+			return s_stringRef_createFromPointerSize(newBuffer, newSize);
+		}
+		
+		// otherwise, we have items
+		
+		// array : human readable we'll write each one on its own line.
+		size_t newSize = curBufferSize + 2 + (writeHumanReadable ? 1 : 0); // room for #( and newline if needed
+		char* newBuffer = realloc(buffer, newSize);
+		
+		if (writeHumanReadable)
+			strncpy (newBuffer+curBufferSize, "#(\n", 3);
+		else
+			strncpy (newBuffer+curBufferSize, "#(", 2);
+		
+		for (size_t i=0; i < arraySize; ++i)
+		{
+			WexprExpression* obj = wexpr_Expression_arrayAt(self, i);
+			
+			// if human readable, we need to indent the line, output the object, then add a newline
+			if (writeHumanReadable)
+			{
+				size_t indentBytes = s_byteSizeForIndent(indent+1);
+				newSize += indentBytes;
+				newBuffer = realloc(newBuffer, newSize);
+				s_fillIndent(newBuffer+newSize-indentBytes, indent+1);
+				
+				// now add our normal
+				PrivateStringRef newBuf = p_wexpr_Expression_appendStringRepresentationToAllocatedBuffer(
+					obj, flags, indent+1, 
+					s_stringRef_createFromPointerSize(newBuffer, newSize)
+				);
+				newBuffer = (char*) newBuf.ptr; newSize = newBuf.size;
+				
+				// add the newline
+				newSize += 1;
+				newBuffer = realloc(newBuffer, newSize);
+				newBuffer[newSize-1] = '\n';
+			}
+			
+			// if not human readable, we just need to either output the object, or put a space then the object
+			else
+			{
+				if (i > 0)
+				{
+					// we need a space
+					newSize += 1;
+					newBuffer = realloc(newBuffer, newSize);
+					newBuffer[newSize-1] = ' ';
+				}
+				
+				// now add our normal
+				PrivateStringRef newBuf = p_wexpr_Expression_appendStringRepresentationToAllocatedBuffer(
+					obj, flags, indent,
+					s_stringRef_createFromPointerSize (newBuffer, newSize)
+				);
+				newBuffer = (char*) newBuf.ptr; newSize = newBuf.size;
+				
+			}
+		}
+		
+		// done with the core of the array
+		// if human readable, indent and add the end array
+		// otherwise, just add the end array
+		if (writeHumanReadable)
+		{
+			size_t indentBytes = s_byteSizeForIndent(indent);
+			newSize += indentBytes;
+			newBuffer = realloc(newBuffer, newSize);
+			s_fillIndent(newBuffer+newSize-indentBytes, indent);
+		}
+		
+		newSize += 1;
+		newBuffer = realloc(newBuffer, newSize);
+		newBuffer[newSize-1] = ')';
+		
+		// and done
+		return s_stringRef_createFromPointerSize(newBuffer, newSize);
+	}
+	
+	else if (type == WexprExpressionTypeMap)
+	{
+		size_t mapSize = wexpr_Expression_mapCount(self);
+		
+		if (mapSize == 0)
+		{
+			// straightforward, always empty structure
+			size_t newSize = curBufferSize + 3;
+			char* newBuffer = realloc(buffer, newSize);
+			strncpy (newBuffer + curBufferSize, "@()", 3);
+			return s_stringRef_createFromPointerSize(newBuffer, newSize);
+		}
+		
+		// otherwise, we have items
+		
+		// map : human readable we'll write each one on its own line
+		size_t newSize = curBufferSize + 2 + (writeHumanReadable ? 1 : 0); // room for @( and newline if needed
+		char* newBuffer = realloc (buffer, newSize);
+		
+		if (writeHumanReadable)
+			strncpy (newBuffer+curBufferSize, "@(\n", 3);
+		else
+			strncpy (newBuffer+curBufferSize, "@(", 2);
+		
+		for (size_t i=0; i < mapSize; ++i)
+		{
+			const char* key = wexpr_Expression_mapKeyAt(self, i);
+			size_t keyLength = strlen(key);
+			WexprExpression* value = wexpr_Expression_mapValueAt(self, i);
+			
+			// if human readable, indent the line, output the key, space, object, newline
+			if (writeHumanReadable)
+			{
+				size_t indentBytes = s_byteSizeForIndent(indent+1);
+				size_t prevSize = newSize;
+				newSize += indentBytes + keyLength + 1; // get us to the object
+				newBuffer = realloc(newBuffer, newSize);
+				s_fillIndent(newBuffer+prevSize, indent+1);
+				strncpy (newBuffer+prevSize+indentBytes, key, keyLength);
+				newBuffer[newSize-1] = ' ';
+				
+				// add the value
+				PrivateStringRef newBuf = p_wexpr_Expression_appendStringRepresentationToAllocatedBuffer(
+					value, flags, indent+1,
+					s_stringRef_createFromPointerSize(newBuffer, newSize)
+				);
+				newBuffer = (char*) newBuf.ptr; newSize = newBuf.size;
+				
+				// add the newline
+				newSize += 1;
+				newBuffer = realloc(newBuffer, newSize);
+				newBuffer[newSize-1] = '\n';
+			}
+			
+			// if not human readable, just output with spaces as needed
+			else
+			{
+				if (i > 0)
+				{
+					// we need a space
+					newSize += 1;
+					newBuffer = realloc(newBuffer, newSize);
+					newBuffer[newSize-1] = ' ';
+				}
+				
+				// now key, space, value
+				size_t prevSize = newSize;
+				newSize += keyLength+1;
+				newBuffer = realloc(newBuffer, newSize);
+				strncpy (newBuffer+prevSize, key, keyLength);
+				newBuffer[newSize-1] = ' ';
+				
+				// add our value
+				PrivateStringRef newBuf = p_wexpr_Expression_appendStringRepresentationToAllocatedBuffer(
+					value, flags, indent+1,
+					s_stringRef_createFromPointerSize(newBuffer, newSize)
+				);
+				newBuffer = (char*) newBuf.ptr; newSize = newBuf.size;
+			}
+		}
+		
+		// done with the core of the map
+		// if human readable, indent and add the end map
+		// otherwise, just add the end map
+		if (writeHumanReadable)
+		{
+			size_t indentBytes = s_byteSizeForIndent(indent);
+			newSize += indentBytes;
+			newBuffer = realloc(newBuffer, newSize);
+			s_fillIndent(newBuffer+newSize-indentBytes, indent);
+		}
+		
+		newSize += 1;
+		newBuffer = realloc(newBuffer, newSize);
+		newBuffer[newSize-1] = ')';
+		
+		// and done
+		return s_stringRef_createFromPointerSize(newBuffer, newSize);
+	}
+	
+	else
+	{
+		fprintf (stderr, "p_wexpr_Expression_appendStringRepresentationToAllocatedBuffer() - Unknown type to generate string for\n");
+		abort();
+	}
+}
+
 // ---------------------- PUBLIC -----------------------------------
 
 // --- Construction/Destruction
@@ -767,10 +1040,34 @@ WexprExpression* wexpr_Expression_createFromString (
 }
 
 
-WexprExpression* wexpr_Expression_createNull ()
+WexprExpression* wexpr_Expression_createNull (void)
 {
 	WexprExpression* expr = malloc (sizeof(WexprExpression));
 	expr->m_type = WexprExpressionTypeNull;
+	
+	return expr;
+}
+
+WexprExpression* wexpr_Expression_createValue (const char* val)
+{
+	WexprExpression* expr = wexpr_Expression_createNull();
+	if (expr)
+	{
+		wexpr_Expression_changeType(expr, WexprExpressionTypeValue);
+		wexpr_Expression_valueSet(expr, val);
+	}
+	
+	return expr;
+}
+
+WexprExpression* wexpr_Expression_createValueFromLengthString (const char* val, size_t length)
+{
+	WexprExpression* expr = wexpr_Expression_createNull();
+	if (expr)
+	{
+		wexpr_Expression_changeType(expr, WexprExpressionTypeValue);
+		wexpr_Expression_valueSetLengthString(expr, val, length);
+	}
 	
 	return expr;
 }
@@ -786,29 +1083,8 @@ WexprExpression* wexpr_Expression_createCopy (WexprExpression* rhs)
 
 void wexpr_Expression_destroy (WexprExpression* self)
 {
-	if (self->m_type == WexprExpressionTypeValue)
-	{
-		free (self->m_value.data);
-	}
-	
-	if (self->m_type == WexprExpressionTypeArray)
-	{
-		struct sglib_WexprExpressionPrivateArrayElement_iterator it;
-		for (WexprExpressionPrivateArrayElement* list = sglib_WexprExpressionPrivateArrayElement_it_init(&it, self->m_array.list);
-			 list != NULL; list = sglib_WexprExpressionPrivateArrayElement_it_next(&it))
-		{
-			wexpr_Expression_destroy (list->expression);
-			free (list);
-		}
-		self->m_array.listCount = 0;
-	}
-	
-	if (self->m_type == WexprExpressionTypeMap)
-	{
-		hashmap_iterate(self->m_map.hash, &s_freeHashData, NULL);
-		
-		hashmap_free (self->m_map.hash);
-	}
+	// null doesnt store anything, so can use this to destroy it
+	wexpr_Expression_changeType(self, WexprExpressionTypeNull);
 	
 	free (self);
 }
@@ -820,6 +1096,68 @@ WexprExpressionType wexpr_Expression_type (WexprExpression* self)
 	return self->m_type;
 }
 
+void wexpr_Expression_changeType (WexprExpression* self, WexprExpressionType type)
+{
+	// first destroy
+	if (self->m_type == WexprExpressionTypeValue)
+	{
+		free (self->m_value.data);
+	}
+	
+	else if (self->m_type == WexprExpressionTypeArray)
+	{
+		struct sglib_WexprExpressionPrivateArrayElement_iterator it;
+		for (WexprExpressionPrivateArrayElement* list = sglib_WexprExpressionPrivateArrayElement_it_init(&it, self->m_array.list);
+			 list != NULL; list = sglib_WexprExpressionPrivateArrayElement_it_next(&it))
+		{
+			wexpr_Expression_destroy (list->expression);
+			free (list);
+		}
+		self->m_array.listCount = 0;
+	}
+	
+	else if (self->m_type == WexprExpressionTypeMap)
+	{
+		hashmap_iterate(self->m_map.hash, &s_freeHashData, NULL);
+		
+		hashmap_free (self->m_map.hash);
+	}
+	
+	// then set
+	self->m_type = type;
+	
+	// then init
+	if (self->m_type == WexprExpressionTypeValue)
+	{
+		self->m_value.data = NULL;
+	}
+	
+	else if (self->m_type == WexprExpressionTypeArray)
+	{
+		self->m_array.list = NULL;
+		self->m_array.listCount = 0;
+	}
+	
+	else if (self->m_type == WexprExpressionTypeMap)
+	{
+		self->m_map.hash = hashmap_new();
+	}
+}
+
+char* wexpr_Expression_createStringRepresentation (WexprExpression* self, size_t indent, WexprWriteFlags flags)
+{
+	PrivateStringRef ref = p_wexpr_Expression_appendStringRepresentationToAllocatedBuffer (self, flags,
+		/*indent*/ indent,
+		/*buffer*/ s_StringRef_createInvalid()
+	);
+	
+	// reallocate the for the null
+	char* buf = realloc( (void*)ref.ptr, ref.size+1);
+	buf[ref.size] = 0;
+	
+	return buf;
+}
+
 // --- Value
 
 const char* wexpr_Expression_value (WexprExpression* self)
@@ -828,6 +1166,26 @@ const char* wexpr_Expression_value (WexprExpression* self)
 		return NULL;
 	
 	return self->m_value.data;
+}
+
+void wexpr_Expression_valueSet (WexprExpression* self, const char* str)
+{
+	if (self->m_type != WexprExpressionTypeValue)
+		return;
+	
+	free (self->m_value.data);
+	self->m_value.data = strdup(str);
+}
+
+void wexpr_Expression_valueSetLengthString (WexprExpression* self, const char* str, size_t length)
+{
+	if (self->m_type != WexprExpressionTypeValue)
+		return;
+	
+	free (self->m_value.data);
+	self->m_value.data = malloc(length+1);
+	memcpy (self->m_value.data, str, length);
+	self->m_value.data[length] = 0;
 }
 
 // --- Array
@@ -856,6 +1214,31 @@ WexprExpression* wexpr_Expression_arrayAt (WexprExpression* self, size_t index)
 	
 	// Couldnt find, out of range.
 	return NULL;
+}
+
+void wexpr_Expression_arrayAddElementToEnd (WexprExpression* self, WexprExpression* element)
+{
+	if (self->m_type != WexprExpressionTypeArray)
+		return;
+	
+	WexprExpressionPrivateArrayElement* elem = malloc(sizeof(WexprExpressionPrivateArrayElement));
+	elem->expression = element;
+	elem->next = NULL;
+	
+	if (self->m_array.listCount == 0)
+	{
+		self->m_array.list = elem;
+	}
+	else
+	{
+		WexprExpressionPrivateArrayElement* head = self->m_array.list;
+		
+		while (head->next != NULL) { head = head->next; }
+		
+		head->next = elem;
+	}
+	
+	++(self->m_array.listCount);
 }
 
 // --- Map
@@ -952,4 +1335,30 @@ WexprExpression* wexpr_Expression_mapValueForKey (WexprExpression* self, const c
 	}
 	
 	return NULL;
+}
+
+void wexpr_Expression_mapSetValueForKey (WexprExpression* self, const char* key, WexprExpression* value)
+{
+	if (self->m_type != WexprExpressionTypeMap)
+		return;
+	
+	WexprExpressionPrivateMapElement* elem = malloc (sizeof(WexprExpressionPrivateMapElement));
+	elem->key = strdup(key);
+	elem->value = value;
+	
+	hashmap_put(self->m_map.hash, elem->key, elem);
+}
+
+void wexpr_Expression_mapSetValueForKeyLengthString (WexprExpression* self, const char* key, size_t length, WexprExpression* value)
+{
+	if (self->m_type != WexprExpressionTypeMap)
+		return;
+	
+	WexprExpressionPrivateMapElement* elem = malloc (sizeof(WexprExpressionPrivateMapElement));
+	elem->value = value;
+	elem->key = malloc(length+1);
+	memcpy (elem->key, key, length);
+	elem->key[length] = 0;
+	
+	hashmap_put(self->m_map.hash, elem->key, elem);
 }

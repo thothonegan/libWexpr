@@ -35,13 +35,14 @@
 #include "ExpressionType.h"
 #include "Macros.h"
 #include "ParseFlags.h"
+#include "WriteFlags.h"
 
 #include <stddef.h> // size_t
 
 LIBWEXPR_EXTERN_C_BEGIN()
 
 //
-/// \brief A wexpr epxression
+/// \brief A wexpr expression
 ///
 /// An expression represents any specific type in Wexpr. It can be:
 /// - null/none - means the expression is invalid or nothing.
@@ -64,7 +65,7 @@ typedef struct WexprExpression WexprExpression;
 /// \brief Creates an expression from a string. You own and must destroy.
 /// \param str The string, must be UTF-8 safe/compatible.
 /// \param flags Flags about parsing.
-/// \param errorInformation Will store error information if any occurs.
+/// \param error Will store error information if any occurs.
 /// \return The created expression, or nullptr if none/error occurred.
 //
 WexprExpression* wexpr_Expression_createFromString (
@@ -76,10 +77,21 @@ WexprExpression* wexpr_Expression_createFromString (
 /// \brief Creates an empty null expression. You own and must destroy.
 /// \return A newly created null expression, or null if it fails.
 //
-WexprExpression* wexpr_Expression_createNull ();
+WexprExpression* wexpr_Expression_createNull (void);
 
 //
-/// \brief Create a copy of an expression. You own the copy. Deep copy.
+/// \brief Create a value expression with the given string being the value.
+/// \return a newly created value expression, or null if it fails.
+//
+WexprExpression* wexpr_Expression_createValue (const char* val);
+
+//
+/// \brief Create a value expression from a length string.
+//
+WexprExpression* wexpr_Expression_createValueFromLengthString (const char* val, size_t length);
+
+//
+/// \brief Create a copy of an expression. You own the copy - deep copy.
 //
 WexprExpression* wexpr_Expression_createCopy (WexprExpression* rhs);
 
@@ -101,6 +113,17 @@ void wexpr_Expression_destroy (WexprExpression* self);
 //
 WexprExpressionType wexpr_Expression_type (WexprExpression* self);
 
+//
+/// \brief Change the type of the expression. Invalidates all data currently in the expression.
+//
+void wexpr_Expression_changeType (WexprExpression* self, WexprExpressionType type);
+
+//
+/// \brief Create a string which represents the expression. Owned by you, must be destroyed with free.
+/// \param indent The starting indent level, generally 0. Will use tabs to indent.
+//
+char* wexpr_Expression_createStringRepresentation (WexprExpression* self, size_t indent, WexprWriteFlags flags);
+
 /// \}
 
 /// \name Values
@@ -110,6 +133,16 @@ WexprExpressionType wexpr_Expression_type (WexprExpression* self);
 /// \brief Return the value of the expression. Will return null if not a value.
 //
 const char* wexpr_Expression_value (WexprExpression* self);
+
+//
+/// \brief Set the value of the expression.
+//
+void wexpr_Expression_valueSet (WexprExpression* self, const char* str);
+
+//
+/// \brief Set the value of the expression using a string with a length.
+//
+void wexpr_Expression_valueSetLengthString (WexprExpression* self, const char* str, size_t length);
 
 /// \}
 
@@ -126,6 +159,12 @@ size_t wexpr_Expression_arrayCount (WexprExpression* self);
 /// \return The expression or NULL if invalid.
 //
 WexprExpression* wexpr_Expression_arrayAt (WexprExpression* self, size_t index);
+
+//
+/// \brief Add an element to the end of the array.
+/// \param element The element to add. You MUST own, and we'll take ownership from you. Use wexpr_Expression_createCopy() if you need to add an un-owned pointer.
+//
+void wexpr_Expression_arrayAddElementToEnd (WexprExpression* self, WexprExpression* element);
 
 /// \}
 
@@ -151,6 +190,20 @@ WexprExpression* wexpr_Expression_mapValueAt (WexprExpression* self, size_t inde
 /// \brief Return the value for a given key within the map, or NULL if not found.
 //
 WexprExpression* wexpr_Expression_mapValueForKey (WexprExpression* self, const char* key);
+
+//
+/// \brief Set the value for a given key in the map
+/// \param key The key to assign the value to.
+/// \param value The value to use. You MUST own, and we'll take ownership from you.
+//
+void wexpr_Expression_mapSetValueForKey (WexprExpression* self, const char* key, WexprExpression* value);
+
+//
+/// \brief Set the value for a given key (lengthstr) in the map
+/// \param key The key to assign the value to.
+/// \param value The value to use. You MUST own, and we'll take ownership from you.
+//
+void wexpr_Expression_mapSetValueForKeyLengthString (WexprExpression* self, const char* key, size_t length, WexprExpression* value);
 
 /// \}
 

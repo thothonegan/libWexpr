@@ -13,6 +13,7 @@ project (libWexpr)
 		${libWexpr_SOURCE_DIR}/Public/libWexpr/ExpressionType.h
 		${libWexpr_SOURCE_DIR}/Public/libWexpr/Macros.h
 		${libWexpr_SOURCE_DIR}/Public/libWexpr/ParseFlags.h
+		${libWexpr_SOURCE_DIR}/Public/libWexpr/WriteFlags.h
 	)
 	
 	set (libWexpr_PRIVATE_HEADERS

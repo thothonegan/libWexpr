@@ -224,7 +224,6 @@ WEXPR_UNITTEST_BEGIN (ExpressionCanDerefReference)
 	WEXPR_ERROR_FREE (err);
 WEXPR_UNITTEST_END()
 
-// exprCanDerefMapProperly
 WEXPR_UNITTEST_BEGIN (ExpressionCanDerefMapProperly)
 	WexprError err = WEXPR_ERROR_INIT();
 	WexprExpression* expr = wexpr_Expression_createFromString("@(first [val] @(a b) second *[val])", WexprParseFlagNone, &err);
@@ -243,6 +242,107 @@ WEXPR_UNITTEST_BEGIN (ExpressionCanDerefMapProperly)
 	WEXPR_ERROR_FREE (err);
 WEXPR_UNITTEST_END()
 
+WEXPR_UNITTEST_BEGIN (ExpressionCanCreateString)
+	WexprError err = WEXPR_ERROR_INIT();
+	WexprExpression* expr = wexpr_Expression_createFromString(
+		"@(first #(a b) second \"20% cooler\")",
+		WexprParseFlagNone, &err
+	);
+	
+#define EL "\n"
+	
+	const char* notHumanReadableString = "@(second \"20% cooler\" first #(a b))";
+	const char* humanReadableString =
+		"@(" EL
+		"	second \"20% cooler\"" EL
+		"	first #(" EL
+		"		a" EL
+		"		b" EL
+		"	)" EL
+		")"
+	;
+	
+#undef EL
+	
+	WEXPR_UNITTEST_ASSERT (err.code == WexprErrorCodeNone, "Should have no error");
+	
+	char* buffer = wexpr_Expression_createStringRepresentation(expr, 0, WexprWriteFlagNone);
+	char* buffer2 = wexpr_Expression_createStringRepresentation(expr, 0,  WexprWriteFlagHumanReadable);
+	
+	WEXPR_UNITTEST_ASSERT (strcmp (buffer, notHumanReadableString) == 0, "Should match non-human readable");
+	WEXPR_UNITTEST_ASSERT (strcmp (buffer2, humanReadableString) == 0, "Should match human readable");
+	
+	free (buffer);
+	free (buffer2);
+	
+	wexpr_Expression_destroy(expr);
+	WEXPR_ERROR_FREE (err);
+WEXPR_UNITTEST_END()
+
+WEXPR_UNITTEST_BEGIN(ExpressionCanChangeType)
+	WexprExpression* expr = wexpr_Expression_createNull();
+	wexpr_Expression_changeType(expr, WexprExpressionTypeValue);
+	
+	WEXPR_UNITTEST_ASSERT (wexpr_Expression_type(expr) == WexprExpressionTypeValue, "Changed type properly");
+	
+	wexpr_Expression_destroy(expr);
+WEXPR_UNITTEST_END()
+
+WEXPR_UNITTEST_BEGIN(ExpressionCanSetValue)
+	WexprExpression* expr = wexpr_Expression_createNull();
+	wexpr_Expression_changeType(expr, WexprExpressionTypeValue);
+	
+	wexpr_Expression_valueSet (expr, "asdf");
+	
+	WEXPR_UNITTEST_ASSERT (strcmp (wexpr_Expression_value(expr), "asdf") == 0, "String not set properly");
+	
+	wexpr_Expression_destroy(expr);
+WEXPR_UNITTEST_END()
+
+WEXPR_UNITTEST_BEGIN(ExpressionCanAddToArray)
+	WexprExpression* expr = wexpr_Expression_createNull();
+	wexpr_Expression_changeType(expr, WexprExpressionTypeArray);
+	
+	WexprExpression* elem = wexpr_Expression_createValue("a");
+	wexpr_Expression_arrayAddElementToEnd (expr, elem); // transfers ownership
+	
+	elem = wexpr_Expression_createValue("b");
+	wexpr_Expression_arrayAddElementToEnd (expr, elem);
+	
+	elem = wexpr_Expression_createValue("c");
+	wexpr_Expression_arrayAddElementToEnd (expr, elem);
+	
+	WEXPR_UNITTEST_ASSERT (wexpr_Expression_arrayCount(expr) == 3, "Should have 3 elements");
+	
+	const char* expected [3] = {
+		"a", "b", "c"
+	};
+	
+	for (size_t i=0; i < 3; ++i)
+	{
+		WexprExpression* val = wexpr_Expression_arrayAt(expr, i);
+		WEXPR_UNITTEST_ASSERT (wexpr_Expression_type(val) == WexprExpressionTypeValue, "Should be v alue");
+		WEXPR_UNITTEST_ASSERT (strcmp(wexpr_Expression_value(val), expected[i]) == 0, "Value expected");
+	}
+	
+	wexpr_Expression_destroy(expr);
+WEXPR_UNITTEST_END()
+
+WEXPR_UNITTEST_BEGIN(ExpressionCanSetInMap)
+	WexprExpression* expr = wexpr_Expression_createNull();
+	wexpr_Expression_changeType(expr, WexprExpressionTypeMap);
+	
+	wexpr_Expression_mapSetValueForKey (expr, "key", wexpr_Expression_createValue("value"));
+	
+	WexprExpression* val = wexpr_Expression_mapValueForKey(expr, "key");
+	
+	WEXPR_UNITTEST_ASSERT (wexpr_Expression_type(val) == WexprExpressionTypeValue, "Should be v alue");
+	WEXPR_UNITTEST_ASSERT (wexpr_Expression_type(val) == WexprExpressionTypeValue, "Should be v alue");
+	
+	wexpr_Expression_destroy(expr);
+	
+WEXPR_UNITTEST_END()
+
 WEXPR_UNITTEST_SUITE_BEGIN (Expression)
 	WEXPR_UNITTEST_SUITE_ADDTEST (Expression, ExpressionCanCreateNull);
 	WEXPR_UNITTEST_SUITE_ADDTEST (Expression, ExpressionCanCreateValue);
@@ -253,6 +353,11 @@ WEXPR_UNITTEST_SUITE_BEGIN (Expression)
 	WEXPR_UNITTEST_SUITE_ADDTEST (Expression, ExpressionrCanUnderstandReference);
 	WEXPR_UNITTEST_SUITE_ADDTEST (Expression, ExpressionCanDerefReference);
 	WEXPR_UNITTEST_SUITE_ADDTEST (Expression, ExpressionCanDerefMapProperly);
+	WEXPR_UNITTEST_SUITE_ADDTEST (Expression, ExpressionCanCreateString);
+	WEXPR_UNITTEST_SUITE_ADDTEST (Expression, ExpressionCanChangeType);
+	WEXPR_UNITTEST_SUITE_ADDTEST (Expression, ExpressionCanSetValue);
+	WEXPR_UNITTEST_SUITE_ADDTEST (Expression, ExpressionCanAddToArray);
+	WEXPR_UNITTEST_SUITE_ADDTEST (Expression, ExpressionCanSetInMap);
 WEXPR_UNITTEST_SUITE_END ()
 
 #endif // WEXPR_TESTS_EXPRESSION_H
