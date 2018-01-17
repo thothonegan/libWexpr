@@ -94,6 +94,21 @@ struct WexprExpression
 
 // ---------------------- PRIVATE ----------------------------------
 
+static char* s_strndup (const char* s, size_t n)
+{
+	size_t len = strlen (s);
+	if (n < len)
+		len = n;
+
+	char* result = (char*)malloc (len + 1);
+	if (!result)
+		return NULL;
+
+	memcpy (result, s, len);
+	result[len] = '\0';
+	return result;
+}
+
 typedef struct PrivateStringRef
 {
 	const char* ptr;
@@ -649,7 +664,7 @@ static PrivateStringRef s_Expression_parseFromString (WexprExpression* self, Pri
 		
 		// now bind the ref - creating a copy of what was made. This will be used for the template.
 		WexprExpressionPrivateMapElement* elem = malloc(sizeof(WexprExpressionPrivateMapElement));
-		elem->key = strndup (refName.ptr, refName.size);
+		elem->key = s_strndup (refName.ptr, refName.size);
 		elem->value = wexpr_Expression_createCopy (self);
 		
 		hashmap_put(parserState->aliasHash, elem->key, elem);
@@ -674,7 +689,7 @@ static PrivateStringRef s_Expression_parseFromString (WexprExpression* self, Pri
 		str = s_StringRef_slice(str, endingBracketIndex+1);
 	
 		WexprExpressionPrivateMapElement* elem = NULL;
-		char* refStr = strndup (refName.ptr, refName.size);
+		char* refStr = s_strndup (refName.ptr, refName.size);
 		int found = hashmap_get(parserState->aliasHash, refStr, (void**) &elem);
 		
 		free (refStr);
@@ -702,7 +717,7 @@ static PrivateStringRef s_Expression_parseFromString (WexprExpression* self, Pri
 			return s_StringRef_createInvalid();
 		
 		self->m_type = WexprExpressionTypeValue;
-		self->m_value.data = strndup (val.value.ptr, val.value.size);
+		self->m_value.data = s_strndup (val.value.ptr, val.value.size);
 		
 		return s_StringRef_slice (str, val.endIndex);
 	}

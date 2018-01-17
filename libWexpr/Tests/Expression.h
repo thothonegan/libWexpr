@@ -251,8 +251,9 @@ WEXPR_UNITTEST_BEGIN (ExpressionCanCreateString)
 	
 #define EL "\n"
 	
-	const char* notHumanReadableString = "@(second \"20% cooler\" first #(a b))";
-	const char* humanReadableString =
+	const char* notHumanReadableString1 = "@(second \"20% cooler\" first #(a b))";
+	const char* notHumanReadableString2 = "@(first #(a b) second \"20% cooler\")";
+	const char* humanReadableString1 =
 		"@(" EL
 		"	second \"20% cooler\"" EL
 		"	first #(" EL
@@ -261,7 +262,15 @@ WEXPR_UNITTEST_BEGIN (ExpressionCanCreateString)
 		"	)" EL
 		")"
 	;
-	
+	const char* humanReadableString2 =
+		"@(" EL
+		"	first #(" EL
+		"		a" EL
+		"		b" EL
+		"	)" EL
+		"	second \"20% cooler\"" EL
+		")"
+		;
 #undef EL
 	
 	WEXPR_UNITTEST_ASSERT (err.code == WexprErrorCodeNone, "Should have no error");
@@ -269,8 +278,14 @@ WEXPR_UNITTEST_BEGIN (ExpressionCanCreateString)
 	char* buffer = wexpr_Expression_createStringRepresentation(expr, 0, WexprWriteFlagNone);
 	char* buffer2 = wexpr_Expression_createStringRepresentation(expr, 0,  WexprWriteFlagHumanReadable);
 	
-	WEXPR_UNITTEST_ASSERT (strcmp (buffer, notHumanReadableString) == 0, "Should match non-human readable");
-	WEXPR_UNITTEST_ASSERT (strcmp (buffer2, humanReadableString) == 0, "Should match human readable");
+	WEXPR_UNITTEST_ASSERT (
+		(strcmp (buffer, notHumanReadableString1) == 0) ||
+		(strcmp (buffer, notHumanReadableString2) == 0), "Should match non-human readable"
+	);
+
+	WEXPR_UNITTEST_ASSERT (
+		(strcmp (buffer2, humanReadableString1) == 0) ||
+		(strcmp (buffer2, humanReadableString2) == 0), "Should match human readable");
 	
 	free (buffer);
 	free (buffer2);
