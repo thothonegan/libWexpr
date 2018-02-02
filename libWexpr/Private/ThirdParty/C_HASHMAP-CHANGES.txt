@@ -1,0 +1,2 @@
+ 
+- 2018-02-02 - Made crc32 static so it doesn't conflict with PNG's crc32.
