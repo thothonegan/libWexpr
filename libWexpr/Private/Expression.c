@@ -199,7 +199,8 @@ static size_t s_StringRef_findString (PrivateStringRef self, PrivateStringRef rh
 	
 	for (size_t i=0; i < self.size; ++i)
 	{
-		if (s_StringRef_isEqual(s_StringRef_slice(self, rhs.size), rhs))
+		PrivateStringRef sliceStrRef = s_StringRef_slice2(self, i, rhs.size);
+		if (s_StringRef_isEqual(sliceStrRef, rhs))
 		{
 			return i;
 		}
@@ -220,7 +221,7 @@ typedef struct PrivateParserState
 	
 } PrivateParserState;
 
-static const char* s_StartBlockComment = ";--(";
+static const char* s_StartBlockComment = ";(--";
 static const char* s_EndBlockComment = "--)";
 
 static bool s_isNewline (char c)
@@ -1004,6 +1005,16 @@ WexprExpression* wexpr_Expression_createFromString (
 	WexprError* error
 )
 {
+	return wexpr_Expression_createFromLengthString (
+		str, strlen(str), flags, error
+	);
+}
+
+WexprExpression* wexpr_Expression_createFromLengthString (
+	const char* str, size_t length, WexprParseFlags flags,
+	WexprError* error
+)
+{
 	WexprExpression* expr = malloc (sizeof(WexprExpression));
 	expr->m_type = WexprExpressionTypeNull;
 	
@@ -1016,7 +1027,10 @@ WexprExpression* wexpr_Expression_createFromString (
 	if (true)
 	{
 		// now start parsing
-		PrivateStringRef rest = s_Expression_parseFromString (expr, s_StringRef_create(str), flags, &parserState, &err);
+		PrivateStringRef rest = s_Expression_parseFromString (expr, 
+			s_stringRef_createFromPointerSize(str, length),
+			flags, &parserState, &err
+		);
 		
 		PrivateStringRef postRest = s_trimFrontOfString (rest, &parserState);
 		
@@ -1099,7 +1113,10 @@ WexprExpression* wexpr_Expression_createCopy (WexprExpression* rhs)
 void wexpr_Expression_destroy (WexprExpression* self)
 {
 	// null doesnt store anything, so can use this to destroy it
-	wexpr_Expression_changeType(self, WexprExpressionTypeNull);
+	if (self)
+	{
+		wexpr_Expression_changeType(self, WexprExpressionTypeNull);
+	}
 	
 	free (self);
 }
@@ -1350,6 +1367,20 @@ WexprExpression* wexpr_Expression_mapValueForKey (WexprExpression* self, const c
 	}
 	
 	return NULL;
+}
+
+WexprExpression* wexpr_Expression_mapValueForLengthKey (WexprExpression* self, const char* key, size_t length)
+{
+	// key has to be 0 terminated for our hash
+	// TODO: use stack functions for this if its short? then we dont have to hit memory
+	char* newKey = malloc(length+1);
+	memcpy (newKey, key, length);
+	newKey[length] = 0; // end terminator
+	
+	WexprExpression* res = wexpr_Expression_mapValueForKey (self, newKey);
+	free (newKey);
+	
+	return res;
 }
 
 void wexpr_Expression_mapSetValueForKey (WexprExpression* self, const char* key, WexprExpression* value)

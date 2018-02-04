@@ -74,6 +74,19 @@ WexprExpression* wexpr_Expression_createFromString (
 );
 
 //
+/// \brief Creates an expression from a string. You own and must destroy.
+/// \param str The string, must be UTF-8 safe/compatible.
+/// \param length The length of str in bytes
+/// \param flags Flags about parsing.
+/// \param error Will store error information if any occurs.
+/// \return The created expression, or nullptr if none/error occurred.
+//
+WexprExpression* wexpr_Expression_createFromLengthString (
+	const char* str, size_t length, WexprParseFlags flags,
+	WexprError* error
+);
+
+//
 /// \brief Creates an empty null expression. You own and must destroy.
 /// \return A newly created null expression, or null if it fails.
 //
@@ -190,6 +203,11 @@ WexprExpression* wexpr_Expression_mapValueAt (WexprExpression* self, size_t inde
 /// \brief Return the value for a given key within the map, or NULL if not found.
 //
 WexprExpression* wexpr_Expression_mapValueForKey (WexprExpression* self, const char* key);
+
+//
+/// \brief Return the value for a given key (w/length) within the map, or NULL if not found.
+//
+WexprExpression* wexpr_Expression_mapValueForLengthKey (WexprExpression* self, const char* key, size_t length);
 
 //
 /// \brief Set the value for a given key in the map
