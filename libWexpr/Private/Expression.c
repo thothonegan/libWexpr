@@ -404,6 +404,9 @@ static PrivateWexprValueStringProperties s_wexprValueStringProperties (PrivateSt
 		}
 	}
 	
+	if (len == 0)
+		props.isBarewordSafe = false; // empty string is not safe, since that will be nothing
+	
 	return props;
 }
 
