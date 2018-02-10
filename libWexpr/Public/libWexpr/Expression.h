@@ -4,7 +4,7 @@
 //
 // #LICENSE_BEGIN:MIT#
 // 
-// Copyright (c) 2017, Kenneth Perry (thothonegan)
+// Copyright (c) 2017-2018, Kenneth Perry (thothonegan)
 // 
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
