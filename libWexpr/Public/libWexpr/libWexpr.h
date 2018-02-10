@@ -41,8 +41,12 @@
 #define LIBWEXPR_VERSION_MINOR 0
 #define LIBWEXPR_VERSION_PATCH 0
 
+LIBWEXPR_EXTERN_C_BEGIN()
+
 int wexpr_Version_major ();
 int wexpr_Version_minor ();
 int wexpr_Version_patch ();
+
+LIBWEXPR_EXTERN_C_END()
 
 #endif // LIBWEXPR_LIBWEXPR_H

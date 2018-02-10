@@ -1,6 +1,6 @@
 //
-/// \file libWexpr/Macros.h
-/// \brief A wexpr expression
+/// \file WexprTool/CommandLineParser.hpp
+/// \brief Parses commandline arguments
 //
 // #LICENSE_BEGIN:MIT#
 // 
@@ -28,22 +28,50 @@
 // #LICENSE_END#
 //
 
-#ifndef LIBWEXPR_MACROS_H
-#define LIBWEXPR_MACROS_H
+#ifndef WEXPRTOOL_COMMANDLINEPARSER_HPP
+#define WEXPRTOOL_COMMANDLINEPARSER_HPP
 
-#ifdef __cplusplus
-	#define LIBWEXPR_EXTERN_C_BEGIN() extern "C" {
-	#define LIBWEXPR_EXTERN_C_END() }
-	
-	#if __cplusplus >= 201103L
-		#define LIBWEXPR_NULLPTR nullptr
-	#else
-		#define LIBWEXPR_NULLPTR NULL
-	#endif
-#else
-	#define LIBWEXPR_EXTERN_C_BEGIN()
-	#define LIBWEXPR_EXTERN_C_END()
-	#define LIBWEXPR_NULLPTR NULL
-#endif
+#include <string>
 
-#endif // LIBWEXPR_MACROS_H
+//
+/// \brief Parse commandline arguments
+//
+class CommandLineParser
+{
+	public:
+		enum class Command
+		{
+			Unknown,
+			
+			/// Make the wexpr human readable
+			HumanReadable,
+			
+			/// Validate the wexpr, output 'true' or 'false'
+			Validate
+		};
+		
+		struct Results
+		{
+			bool help = false;
+			bool version = false;
+			bool validate = false;
+			
+			Command command = Command::HumanReadable;
+			std::string inputPath = "-";
+			std::string outputPath = "-";
+		};
+		
+		//
+		/// \brief Parse arguments into results
+		//
+		static Results parse (int argc, char** argv);
+		
+		//
+		/// \brief Display help
+		//
+		static void displayHelp(int argc, char** argv);
+		
+	private:
+};
+
+#endif // WEXPRTOOL_COMMANDLINEPARSER_HPP

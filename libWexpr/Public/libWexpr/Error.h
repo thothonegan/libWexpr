@@ -73,13 +73,13 @@ typedef struct WexprError
 /// Use this to create your errors:
 ///   WexprError err = WEXPR_ERROR_INIT();
 //
-#define WEXPR_ERROR_INIT() { WexprErrorCodeNone, NULL }
+#define WEXPR_ERROR_INIT() { WexprErrorCodeNone, LIBWEXPR_NULLPTR }
 
 //
 /// \brief Macro which frees an error. Call when done with the error variable, will cleanup as needed or not.
 //
 #define WEXPR_ERROR_FREE(err) \
-	if (err.message) { free(err.message); err.message = NULL; }
+	if (err.message) { free(err.message); err.message = LIBWEXPR_NULLPTR; }
 
 LIBWEXPR_EXTERN_C_END()
 

@@ -22,3 +22,4 @@ if (CATALYST_INSTALL_PREFIX) # use catalyst on top of cmake
 endif ()
 
 add_subdirectory (libWexpr)
+add_subdirectory (WexprTool)
