@@ -149,3 +149,133 @@ Linux-X86_64@Clang@@~Release:Package:
         - curl -fsSL 'http://developer.hackerguild/HGuildCI/hguildCIUpload.rb' | ruby -- - "${HGUILD_PROJECT_NAME}" "${CI_COMMIT_REF_NAME}" "${HGUILD_PROFILE}" "${HGUILD_BUILDTYPE}" build.hguildpkg
         - rm build.hguildpkg
 
+
+macOS-X86_64@Clang@@~Debug:Prepare:
+    cache:
+        key: "macOS-X86_64@Clang@@~Debug"
+        paths:
+        - _HGuild/
+        
+    stage: prepare
+    tags:
+        - ninja
+        - osx
+        - clang
+        
+    variables:
+        HGUILD_PROFILE: macOS-X86_64@Clang@@
+        HGUILD_BUILDTYPE: Debug
+        
+    script:
+        - ${HGUILD} install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . --dependenciesOnly ${HGUILD_PROJECT_NAME}@CI
+
+macOS-X86_64@Clang@@~Debug:Build:
+    cache:
+        key: "macOS-X86_64@Clang@@~Debug"
+        paths:
+        - _HGuild/
+        
+    stage: build
+    tags:
+        - ninja
+        - osx
+        - clang
+        
+    variables:
+        HGUILD_PROFILE: macOS-X86_64@Clang@@
+        HGUILD_BUILDTYPE: Debug
+        
+    script:
+        - ${HGUILD} install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . ${HGUILD_PROJECT_NAME}@CI
+
+macOS-X86_64@Clang@@~Debug:Package:
+    only:
+        - tags   # tags are stable
+        - master # master branch we always want the newest ref
+        # TODO? release branches. But we dont want to pickup issue branches.
+
+    cache:
+        key: "macOS-X86_64@Clang@@~Debug"
+        paths:
+        - _HGuild/
+        
+    stage: package
+    tags:
+        - ninja
+        - osx
+        - clang
+        
+    variables:
+        HGUILD_PROFILE: macOS-X86_64@Clang@@
+        HGUILD_BUILDTYPE: Debug
+
+    script:
+        - ${HGUILD} source:install:package --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . ${HGUILD_PROJECT_NAME}@CI build.hguildpkg
+        - curl -fsSL 'http://developer.hackerguild/HGuildCI/hguildCIUpload.rb' | ruby -- - "${HGUILD_PROJECT_NAME}" "${CI_COMMIT_REF_NAME}" "${HGUILD_PROFILE}" "${HGUILD_BUILDTYPE}" build.hguildpkg
+        - rm build.hguildpkg
+
+
+macOS-X86_64@Clang@@~Release:Prepare:
+    cache:
+        key: "macOS-X86_64@Clang@@~Release"
+        paths:
+        - _HGuild/
+        
+    stage: prepare
+    tags:
+        - ninja
+        - osx
+        - clang
+        
+    variables:
+        HGUILD_PROFILE: macOS-X86_64@Clang@@
+        HGUILD_BUILDTYPE: Release
+        
+    script:
+        - ${HGUILD} install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . --dependenciesOnly ${HGUILD_PROJECT_NAME}@CI
+
+macOS-X86_64@Clang@@~Release:Build:
+    cache:
+        key: "macOS-X86_64@Clang@@~Release"
+        paths:
+        - _HGuild/
+        
+    stage: build
+    tags:
+        - ninja
+        - osx
+        - clang
+        
+    variables:
+        HGUILD_PROFILE: macOS-X86_64@Clang@@
+        HGUILD_BUILDTYPE: Release
+        
+    script:
+        - ${HGUILD} install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . ${HGUILD_PROJECT_NAME}@CI
+
+macOS-X86_64@Clang@@~Release:Package:
+    only:
+        - tags   # tags are stable
+        - master # master branch we always want the newest ref
+        # TODO? release branches. But we dont want to pickup issue branches.
+
+    cache:
+        key: "macOS-X86_64@Clang@@~Release"
+        paths:
+        - _HGuild/
+        
+    stage: package
+    tags:
+        - ninja
+        - osx
+        - clang
+        
+    variables:
+        HGUILD_PROFILE: macOS-X86_64@Clang@@
+        HGUILD_BUILDTYPE: Release
+
+    script:
+        - ${HGUILD} source:install:package --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . ${HGUILD_PROJECT_NAME}@CI build.hguildpkg
+        - curl -fsSL 'http://developer.hackerguild/HGuildCI/hguildCIUpload.rb' | ruby -- - "${HGUILD_PROJECT_NAME}" "${CI_COMMIT_REF_NAME}" "${HGUILD_PROFILE}" "${HGUILD_BUILDTYPE}" build.hguildpkg
+        - rm build.hguildpkg
+
