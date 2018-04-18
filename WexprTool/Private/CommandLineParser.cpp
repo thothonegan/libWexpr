@@ -65,6 +65,20 @@ CommandLineParser::Results CommandLineParser::parse(int argc, char ** argv)
 				++argIndex;
 			}
 		}
+		else if (arg == "-i" || arg == "--input")
+		{
+			if ( (argIndex+1) < argc)
+			{
+				r.inputPath = argv[argIndex+1];
+			}
+		}
+		else if (arg == "-o" || arg == "--output")
+		{
+			if ( (argIndex+1) < argc)
+			{
+				r.outputPath = argv[argIndex+1];
+			}
+		}
 	}
 	
 	return r;

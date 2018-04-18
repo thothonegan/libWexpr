@@ -441,7 +441,8 @@ static void s_Expression_copyInto (WexprExpression* self, WexprExpression* rhs)
 		case WexprExpressionTypeArray:
 		{
 			self->m_type = WexprExpressionTypeArray;
-			self->m_array.listCount = self->m_array.listCount;
+			self->m_array.list = NULL;
+			self->m_array.listCount = rhs->m_array.listCount;
 			
 			for (size_t i=0; i < self->m_array.listCount; ++i)
 			{

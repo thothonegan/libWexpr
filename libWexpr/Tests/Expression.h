@@ -224,6 +224,21 @@ WEXPR_UNITTEST_BEGIN (ExpressionCanDerefReference)
 	WEXPR_ERROR_FREE (err);
 WEXPR_UNITTEST_END()
 
+WEXPR_UNITTEST_BEGIN (ExpressionCanDerefArrayReference)
+	WexprError err = WEXPR_ERROR_INIT();
+	WexprExpression* expr = wexpr_Expression_createFromString("@(first [val]#(1 2) second *[val])", WexprParseFlagNone, &err);
+
+	WEXPR_UNITTEST_ASSERT (err.code == WexprErrorCodeNone, "Should have no error");
+	WEXPR_UNITTEST_ASSERT (wexpr_Expression_type(expr) == WexprExpressionTypeMap, "Should be a map");
+
+	WexprExpression* val = wexpr_Expression_mapValueForKey(expr, "second");
+	WEXPR_UNITTEST_ASSERT (wexpr_Expression_type(val) == WexprExpressionTypeArray, "Should be an array");
+	WEXPR_UNITTEST_ASSERT (wexpr_Expression_arrayCount(val) == 2, "Should have 2 items");
+	
+	wexpr_Expression_destroy(expr);
+	WEXPR_ERROR_FREE (err);
+WEXPR_UNITTEST_END()
+
 WEXPR_UNITTEST_BEGIN (ExpressionCanDerefMapProperly)
 	WexprError err = WEXPR_ERROR_INIT();
 	WexprExpression* expr = wexpr_Expression_createFromString("@(first [val] @(a b) second *[val])", WexprParseFlagNone, &err);
@@ -367,6 +382,7 @@ WEXPR_UNITTEST_SUITE_BEGIN (Expression)
 	WEXPR_UNITTEST_SUITE_ADDTEST (Expression, ExpressionCanCreateMap);
 	WEXPR_UNITTEST_SUITE_ADDTEST (Expression, ExpressionrCanUnderstandReference);
 	WEXPR_UNITTEST_SUITE_ADDTEST (Expression, ExpressionCanDerefReference);
+	WEXPR_UNITTEST_SUITE_ADDTEST (Expression, ExpressionCanDerefArrayReference);
 	WEXPR_UNITTEST_SUITE_ADDTEST (Expression, ExpressionCanDerefMapProperly);
 	WEXPR_UNITTEST_SUITE_ADDTEST (Expression, ExpressionCanCreateString);
 	WEXPR_UNITTEST_SUITE_ADDTEST (Expression, ExpressionCanChangeType);

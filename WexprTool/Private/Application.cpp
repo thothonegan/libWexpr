@@ -141,6 +141,8 @@ int main (int argc, char** argv)
 				s_writeAllOutputTo(results.outputPath, std::string(buffer));
 			free (buffer);
 		}
+
+		wexpr_Expression_destroy (expr);
 	}
 	
 	else
