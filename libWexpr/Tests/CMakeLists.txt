@@ -47,7 +47,7 @@ if (CatalystProject_libWexprTests_ENABLE)
 			"${libWexprTests_SOURCE_DIR}/../Public"
 		)
 
-		set_property (TARGET libWexprTests APPEND PROPERTY COMPILE_DEFINITIONS ${libWexprTests_SOURCES})
+	set_property (TARGET libWexprTests APPEND PROPERTY COMPILE_DEFINITIONS ${libWexprTests_DEFINES})
 
 		if (NOT TESTS_DISABLE)
 			add_custom_command (TARGET libWexprTests POST_BUILD COMMAND ${TEST_RUNNER} $<TARGET_FILE:libWexprTests>)
