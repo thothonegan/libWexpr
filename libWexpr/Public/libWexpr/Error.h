@@ -55,8 +55,12 @@ enum
 	WexprErrorCodeMapKeyMustBeAValue, ///< Map keys must be a value
 	WexprErrorCodeReferenceMissingEndBracket, ///< A reference is missing an end bracket
 	WexprErrorCodeReferenceInsertMissingEndBracket, ///< A reference we tried to insert is missing an end bracket
-	WexprErrorCodeReferenceUnknownReference ///< Tried to look for a reference, but it didn't exist.
+	WexprErrorCodeReferenceUnknownReference, ///< Tried to look for a reference, but it didn't exist.
+	WexprErrorCodeArrayMissingEndParen ///< Tried to find the ending paren, but it didn't exist.
 };
+
+typedef uint32_t WexprLineNumber;
+typedef uint32_t WexprColumnNumber;
 
 //
 /// \brief The actual error.
@@ -66,14 +70,26 @@ typedef struct WexprError
 {
 	WexprErrorCode code; ///< The general code for the error.
 	char* message; ///< Must be freed if set. See WEXPR_ERROR_FREE()
+	WexprLineNumber line; ///< Line number of the error. 0 if unknown.
+	WexprColumnNumber column; ///< Column number of the error. 0 if unknown.
 } WexprError;
+
+//
+/// \brief Move an error to another error (c++ style)
+//
+#define WEXPR_ERROR_MOVE(dest, source) do { \
+	(dest)->code = (source)->code; \
+	(dest)->message = (source)->message; (source)->message = LIBWEXPR_NULLPTR; \
+	(dest)->line = (source)->line; \
+	(dest)->column = (source)->column; \
+} while (0)
 
 //
 /// \brief Macro which creates a default non-error
 /// Use this to create your errors:
 ///   WexprError err = WEXPR_ERROR_INIT();
 //
-#define WEXPR_ERROR_INIT() { WexprErrorCodeNone, LIBWEXPR_NULLPTR }
+#define WEXPR_ERROR_INIT() { WexprErrorCodeNone, LIBWEXPR_NULLPTR, 0, 0 }
 
 //
 /// \brief Macro which frees an error. Call when done with the error variable, will cleanup as needed or not.

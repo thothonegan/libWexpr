@@ -120,8 +120,12 @@ int main (int argc, char** argv)
 			}
 			else
 			{
+				std::string input = results.inputPath;
+				if (input == "-")
+					input = "(stdin)";
+				
 				std::cerr << "WexprTool: Error occurred with wexpr:" << std::endl;
-				std::cerr << "WexprTool: " << err.message << std::endl;
+				std::cerr << "WexprTool: " << input << ":" << err.line << ":" << err.column << ": " << err.message << std::endl;
 				return EXIT_FAILURE;
 			}
 		}

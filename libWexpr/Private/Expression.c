@@ -209,14 +209,44 @@ static size_t s_StringRef_findString (PrivateStringRef self, PrivateStringRef rh
 typedef struct PrivateParserState
 {
 	// position in the data we loaded
-	uint32_t line;
-	uint32_t column;
+	WexprLineNumber line;
+	WexprColumnNumber column;
 	
 	// alias information list.
 	// contains WexprExpressionPrivateMapElement that we own
 	map_t aliasHash;
 	
 } PrivateParserState;
+
+void s_privateParserState_init (PrivateParserState* state)
+{
+	state->aliasHash = hashmap_new();
+	
+	// first position in the file
+	state->line = 1;
+	state->column = 1;
+}
+
+void s_privateParserState_free (PrivateParserState* state)
+{
+	hashmap_free(state->aliasHash);
+}
+
+void s_privateParserState_moveForwardBasedOnString (PrivateParserState* parserState, PrivateStringRef str)
+{
+	for (size_t i=0; i < str.size; ++i)
+	{
+		if (str.ptr[i] == '\n') // newline
+		{
+			parserState->line += 1;
+			parserState->column = 1;
+		}
+		else // normal
+		{
+			parserState->column += 1;
+		}
+	}
+}
 
 static const char* s_StartBlockComment = ";(--";
 static const char* s_EndBlockComment = "--)";
@@ -250,7 +280,7 @@ static PrivateStringRef s_trimFrontOfString (PrivateStringRef str, PrivateParser
 			if (s_isNewline (first))
 			{
 				parserState->line += 1;
-				parserState->column = 0;
+				parserState->column = 1;
 			}
 			else
 			{
@@ -281,6 +311,15 @@ static PrivateStringRef s_trimFrontOfString (PrivateStringRef str, PrivateParser
 				);
 				
 			size_t lengthToSkip = isTillNewline ? 1 : strlen(s_EndBlockComment);
+			
+			// Move forward columns/rows as needed
+			s_privateParserState_moveForwardBasedOnString(
+				parserState,
+				s_stringRef_createFromPointerSize(
+					str.ptr, (endIndex == s_InvalidIndex)
+						? str.size : (endIndex+lengthToSkip)
+				)
+			);
 			
 			if (endIndex == s_InvalidIndex
 				|| endIndex > str.size - lengthToSkip)
@@ -336,6 +375,7 @@ static PrivateWexprStringValue s_valueOfString (
 			{
 				// done!
 				PrivateWexprStringValue res = { s_StringRef_slice2 (str, valueStartPos, pos-valueStartPos), pos+1};
+				
 				return res;
 			}
 		}
@@ -346,6 +386,7 @@ static PrivateWexprStringValue s_valueOfString (
 			{
 				// done! we hit a whitespace or an end construct
 				PrivateWexprStringValue res = { s_StringRef_slice2 (str, valueStartPos, pos-valueStartPos), pos};
+				
 				return res;
 			}
 		}
@@ -359,9 +400,10 @@ static PrivateWexprStringValue s_valueOfString (
 	{
 		if (error)
 		{
-			// TODO: append error information
 			error->code = WexprErrorCodeStringMissingEndingQuote;
 			error->message = strdup("String with quote is missing the end quote");
+			error->column = parserState->column;
+			error->line = parserState->line;
 		}
 		
 		PrivateWexprStringValue res = { s_StringRef_createInvalid(), 0 };
@@ -493,6 +535,8 @@ static PrivateStringRef s_Expression_parseFromString (WexprExpression* self, Pri
 		{
 			error->code = WexprErrorCodeEmptyString;
 			error->message = strdup("Was told to parse an empty string");
+			error->line = parserState->line;
+			error->column = parserState->column;
 		}
 		
 		return s_StringRef_createInvalid();
@@ -521,11 +565,22 @@ static PrivateStringRef s_Expression_parseFromString (WexprExpression* self, Pri
 		
 		// move our string forward
 		str = s_StringRef_slice(str, 2);
+		parserState->column += 2;
 		
 		// continue building children as needed
 		while (true)
 		{
 			str = s_trimFrontOfString (str, parserState);
+			
+			if (str.size == 0)
+			{
+				error->code = WexprErrorCodeArrayMissingEndParen;
+				error->message = strdup("An Array was missing its ending paren");
+				error->line = parserState->line;
+				error->column = parserState->column;
+				
+				return s_StringRef_createInvalid();
+			}
 			
 			if (s_StringRef_isEqual(
 				s_StringRef_slice2(str, 0, 1),
@@ -567,6 +622,7 @@ static PrivateStringRef s_Expression_parseFromString (WexprExpression* self, Pri
 		}
 		
 		str = s_StringRef_slice(str, 1); // remove the end array
+		parserState->column += 1;
 		
 		// done with array
 		return str;
@@ -580,6 +636,7 @@ static PrivateStringRef s_Expression_parseFromString (WexprExpression* self, Pri
 		
 		// move our string accordingly
 		str = s_StringRef_slice(str, 2);
+		parserState->column += 2;
 		
 		// build our children as needed
 		while (true)
@@ -590,6 +647,9 @@ static PrivateStringRef s_Expression_parseFromString (WexprExpression* self, Pri
 			{
 				error->code = WexprErrorCodeMapMissingEndParen;
 				error->message = strdup("A Map was missing its ending paren");
+				error->line = parserState->line;
+				error->column = parserState->column;
+				
 				return s_StringRef_createInvalid();
 			}
 			
@@ -604,6 +664,10 @@ static PrivateStringRef s_Expression_parseFromString (WexprExpression* self, Pri
 			else
 			{
 				// parse as a new expression - we'll alternate keys and values
+				// keep our previous position just in case the value is bad
+				WexprLineNumber prevLine = parserState->line;
+				WexprColumnNumber prevColumn = parserState->column;
+				
 				WexprExpression* keyExpression = wexpr_Expression_createNull();
 				str = s_Expression_parseFromString(keyExpression, str, parseFlags, parserState, error);
 				
@@ -611,7 +675,9 @@ static PrivateStringRef s_Expression_parseFromString (WexprExpression* self, Pri
 				{
 					error->code = WexprErrorCodeMapKeyMustBeAValue;
 					error->message = strdup("Map keys must be a value");
-					
+					error->line = prevLine;
+					error->column = prevColumn;
+				
 					wexpr_Expression_destroy(keyExpression);
 					
 					return s_StringRef_createInvalid();
@@ -635,6 +701,7 @@ static PrivateStringRef s_Expression_parseFromString (WexprExpression* self, Pri
 		
 		// remove the end map
 		str = s_StringRef_slice(str, 1);
+		parserState->column += 1;
 		
 		// done with map
 		return str;
@@ -650,11 +717,18 @@ static PrivateStringRef s_Expression_parseFromString (WexprExpression* self, Pri
 		{
 			error->code = WexprErrorCodeReferenceMissingEndBracket;
 			error->message = strdup ("A reference [] is missing its ending bracket");
+			error->line = parserState->line;
+			error->column = parserState->column;
 			
 			return s_StringRef_createInvalid();
 		}
 		
 		PrivateStringRef refName = s_StringRef_slice2(str, 1, endingBracketIndex-1);
+		
+		// move forward
+		s_privateParserState_moveForwardBasedOnString(parserState, 
+			s_StringRef_slice2(str, 0, endingBracketIndex+1)
+		);
 		str = s_StringRef_slice(str, endingBracketIndex+1);
 		
 		// continue parsing at the same level : stored the reference name
@@ -683,11 +757,18 @@ static PrivateStringRef s_Expression_parseFromString (WexprExpression* self, Pri
 		{
 			error->code = WexprErrorCodeReferenceInsertMissingEndBracket;
 			error->message = strdup ("A reference insert *[] is missing its ending bracket");
+			error->line = parserState->line;
+			error->column = parserState->column;
 			
 			return s_StringRef_createInvalid();
 		}
 		
 		PrivateStringRef refName = s_StringRef_slice2(str, 2, endingBracketIndex-2);
+		
+		// move forward
+		s_privateParserState_moveForwardBasedOnString(parserState, 
+			s_StringRef_slice2(str, 0, endingBracketIndex+1)
+		);
 		str = s_StringRef_slice(str, endingBracketIndex+1);
 	
 		WexprExpressionPrivateMapElement* elem = NULL;
@@ -701,6 +782,8 @@ static PrivateStringRef s_Expression_parseFromString (WexprExpression* self, Pri
 			// not found
 			error->code = WexprErrorCodeReferenceUnknownReference;
 			error->message = strdup ("Tried to insert a reference, but couldn't find it.");
+			error->line = parserState->line;
+			error->column = parserState->column;
 			
 			return s_StringRef_createInvalid();
 		}
@@ -720,6 +803,12 @@ static PrivateStringRef s_Expression_parseFromString (WexprExpression* self, Pri
 		
 		self->m_type = WexprExpressionTypeValue;
 		self->m_value.data = s_dupLengthString (val.value.ptr, val.value.size);
+		
+		s_privateParserState_moveForwardBasedOnString (parserState,
+			s_StringRef_slice2(
+				str, 0, val.endIndex
+			)
+		);
 		
 		return s_StringRef_slice (str, val.endIndex);
 	}
@@ -1020,7 +1109,7 @@ WexprExpression* wexpr_Expression_createFromLengthString (
 	expr->m_type = WexprExpressionTypeNull;
 	
 	PrivateParserState parserState;
-	parserState.aliasHash = hashmap_new();
+	s_privateParserState_init (&parserState);
 	
 	WexprError err = WEXPR_ERROR_INIT();
 	
@@ -1039,6 +1128,8 @@ WexprExpression* wexpr_Expression_createFromLengthString (
 		{
 			err.code = WexprErrorCodeExtraDataAfterParsingRoot;
 			err.message = strdup ("Extra data after parsing the root expression");
+			err.line = parserState.line;
+			err.column = parserState.column;
 		}
 	}
 	else
@@ -1049,7 +1140,6 @@ WexprExpression* wexpr_Expression_createFromLengthString (
 	
 	// cleanup our parser state
 	hashmap_iterate(parserState.aliasHash, &s_freeHashData, NULL);
-	hashmap_free(parserState.aliasHash);
 	
 	if (err.code != WexprErrorCodeNone)
 	{
@@ -1057,14 +1147,17 @@ WexprExpression* wexpr_Expression_createFromLengthString (
 		
 		if (error)
 		{
-			// move our error so we dont double free
-			error->code = err.code; err.code = WexprErrorCodeNone;
-			error->message = err.message; err.message = NULL;
+			WEXPR_ERROR_MOVE(error, &err);
 		}
 		
 		WEXPR_ERROR_FREE (err);
+		
+		s_privateParserState_free(&parserState);
+		
 		return NULL;
 	}
+	
+	s_privateParserState_free(&parserState);
 	
 	return expr;
 }

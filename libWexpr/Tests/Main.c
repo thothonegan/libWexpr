@@ -29,6 +29,7 @@
 //
 
 #include "Expression.h"
+#include "ExpressionErrors.h"
 #include "ExpressionType.h"
 
 int main (int argc, char** argv)
@@ -43,6 +44,7 @@ int main (int argc, char** argv)
 		}
 	
 	RUN_SUITE(Expression)
+	RUN_SUITE(ExpressionErrors)
 	RUN_SUITE(ExpressionType)
 	
 	printf ("\nTEST RESULTS: Success: %d Failures: %d\n", res.successes, res.failures);
