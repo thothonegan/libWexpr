@@ -1006,6 +1006,9 @@ static PrivateStringRef p_wexpr_Expression_appendStringRepresentationToAllocated
 		for (size_t i=0; i < mapSize; ++i)
 		{
 			const char* key = wexpr_Expression_mapKeyAt(self, i);
+			if (!key)
+				continue; // we shouldnt ever get an empty key, but its possible currently in the case of dereffing in a key for some reason : @([a]a b *[a] c)
+			
 			size_t keyLength = strlen(key);
 			WexprExpression* value = wexpr_Expression_mapValueAt(self, i);
 			
