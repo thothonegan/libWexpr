@@ -47,7 +47,7 @@ tests.each do |testData|
 	
 	cmd=commandToRun.sub '{}', fileName
 	
-	output = `#{cmd}`
+	output = `#{cmd} 2>&1`
 	
 	if displayOutput
 		puts output

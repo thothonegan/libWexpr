@@ -2,7 +2,7 @@
 Expression ::= OptWS ActualExpression OptWS
 
 ActualExpression ::= RefNamedExpression | NormalExpression
-RefNamedExpression ::= RefDeclaration NormalExpression
+RefNamedExpression ::= RefDeclaration ActualExpression
 NormalExpression ::= Null | Value | Array | Map | BinaryData | RefInject
 
 Null ::= "null" | "nil"
