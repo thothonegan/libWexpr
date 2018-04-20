@@ -1,0 +1,41 @@
+/* tokens */
+Expression ::= OptWS ActualExpression OptWS
+
+ActualExpression ::= RefNamedExpression | NormalExpression
+RefNamedExpression ::= RefDeclaration NormalExpression
+NormalExpression ::= Null | Value | Array | Map | BinaryData | RefInject
+
+Null ::= "null" | "nil"
+
+Value ::= BareValue | QuotedValue
+
+BareValue ::= "[^\*#@\(\);\[\]\^\r\n \t]+"
+
+QuotedValue ::= '"' EscapableString '"'
+
+EscapableString ::= ([^\"] | EscapedCharacter)*
+
+EscapedCharacter ::= '\r' | '\n' | '\t' | '\"' | '\\'
+
+BinaryData ::= "^(" Base64Character* ")"
+
+Array ::= "#(" OptWS (Expression OptWS)* ")"
+Map ::= "@(" (OptWS Value OptWS Expression)* OptWS")"
+
+Base64Character ::= [A-Za-z0-9+/=]*
+
+LineComment ::= ';' ([^\n])*
+
+BlockComment ::= ';(--' Any* '--)'
+
+Identifier ::= [A-Za-z_]+[A-Za-z0-9_]*
+
+RefDeclaration ::= '[' Identifier ']'
+
+RefInject ::= '*[' Identifier ']'
+
+OptWS ::= WSChar*
+
+WS ::= WSChar+
+
+WSChar ::= '\t' | '\n' | ' ' | LineComment | BlockComment
