@@ -36,6 +36,7 @@ const char* wexpr_ExpressionType_toString (WexprExpressionType self)
 {
 	switch (self)
 	{
+		case WexprExpressionTypeInvalid:  return "Invalid";
 		case WexprExpressionTypeNull:  return "Null";
 		case WexprExpressionTypeValue: return "Value";
 		case WexprExpressionTypeMap:   return "Map";
