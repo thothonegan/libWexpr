@@ -5,7 +5,13 @@ tests = []
 scriptDir = File.expand_path(File.dirname(__FILE__))
 
 commandToRun = ""
+displayOutput = false
 ARGV.each do|a|
+	if a == "--displayOutput"
+		displayOutput = true
+		next
+	end
+
 	commandToRun += ('"' + a + '"' + " ")
 end
 
@@ -43,6 +49,10 @@ tests.each do |testData|
 	
 	output = `#{cmd}`
 	
+	if displayOutput
+		puts output
+	end
+
 	if $?.success? == testData[:shouldBeCorrect]
 		pass += 1
 	else
