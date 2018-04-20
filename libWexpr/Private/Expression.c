@@ -833,6 +833,42 @@ static PrivateStringRef s_Expression_parseFromString (WexprExpression* self, Pri
 		
 		PrivateStringRef refName = s_StringRef_slice2(str, 1, endingBracketIndex-1);
 		
+		// validate the contents
+		bool invalidName = false;
+		for (size_t i=0; i < refName.size; ++i)
+		{
+			char v = refName.ptr[i];
+			
+			bool isAlpha = (v >= 'a' && v <= 'z') || (v >= 'A' && v <= 'Z');
+			bool isNumber = (v >= '0' && v <= '9');
+			bool isUnder = (v == '_');
+			
+			if (i == 0 && (isAlpha || isUnder))
+			{}
+			else if (i != 0 && (isAlpha || isNumber || isUnder))
+			{}
+			else
+			{
+				invalidName = true;
+				break;
+			}
+		}
+		
+		if (invalidName)
+		{
+			if (error)
+			{
+				error->code = WexprErrorCodeReferenceInvalidName;
+				error->message = strdup ("A reference doesn't have a valid name");
+				error->line = parserState->line;
+				error->column = parserState->column;
+				
+				return s_StringRef_createInvalid();
+			}
+			
+			return s_StringRef_createInvalid();
+		}
+		
 		// move forward
 		s_privateParserState_moveForwardBasedOnString(parserState, 
 			s_StringRef_slice2(str, 0, endingBracketIndex+1)
