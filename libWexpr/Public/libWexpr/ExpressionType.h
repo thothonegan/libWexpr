@@ -47,10 +47,13 @@ typedef uint8_t WexprExpressionType;
 //
 enum
 {
-	WexprExpressionTypeNull  = 0, ///< No expression or an invalid expression
+	WexprExpressionTypeNull  = 0, ///< Null expression (null / nil)
 	WexprExpressionTypeValue = 1, ///< A value. Can be a number, quoted, or token. Must be UTF-8 safe.
 	WexprExpressionTypeArray = 2, ///< An array of items where order matters.
-	WexprExpressionTypeMap   = 3  ///< An array of items where each pair is a key/value pair. Not ordered. Keys are required to be values currently.
+	WexprExpressionTypeMap   = 3,  ///< An array of items where each pair is a key/value pair. Not ordered. Keys are required to be values currently.
+	
+	
+	WexprExpressionTypeInvalid = 255 ///< Invalid expression - not filled in or usable
 };
 
 //

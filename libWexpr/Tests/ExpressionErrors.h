@@ -116,12 +116,34 @@ WEXPR_UNITTEST_BEGIN (ExpressionErrorsReferenceMissingItsEndingBracket)
 WEXPR_UNITTEST_END ()
 
 WEXPR_UNITTEST_BEGIN (ExpressionErrorsReferenceInvalid)
-WexprError err = WEXPR_ERROR_INIT();
+	WexprError err = WEXPR_ERROR_INIT();
 	WexprExpression* valueExpr = wexpr_Expression_createFromString("*[asdf]", WexprParseFlagNone, &err);
 	
 	WEXPR_UNITTEST_ASSERT (!valueExpr, "Shouldnt generate expression");
 	WEXPR_UNITTEST_ASSERT (err.code == WexprErrorCodeReferenceUnknownReference, "Invalid ref");
 	WEXPR_UNITTEST_ASSERT (err.line == 1 && err.column == 8, "Position should be right");
+	
+	WEXPR_ERROR_FREE (err);
+WEXPR_UNITTEST_END ()
+
+WEXPR_UNITTEST_BEGIN (ExpressionErrorsBlankIsError)
+	WexprError err = WEXPR_ERROR_INIT();
+	WexprExpression* valueExpr = wexpr_Expression_createFromString("", WexprParseFlagNone, &err);
+	
+	WEXPR_UNITTEST_ASSERT (!valueExpr, "Shouldnt generate expression");
+	WEXPR_UNITTEST_ASSERT (err.code == WexprErrorCodeEmptyString, "Empty string");
+	WEXPR_UNITTEST_ASSERT (err.line == 1 && err.column == 1, "Position should be right");
+	
+	WEXPR_ERROR_FREE (err);
+WEXPR_UNITTEST_END ()
+
+WEXPR_UNITTEST_BEGIN (ExpressionErrorsJustCommentIsError)
+	WexprError err = WEXPR_ERROR_INIT();
+	WexprExpression* valueExpr = wexpr_Expression_createFromString(" ;(-- asdf --)  ", WexprParseFlagNone, &err);
+	
+	WEXPR_UNITTEST_ASSERT (!valueExpr, "Shouldnt generate expression");
+	WEXPR_UNITTEST_ASSERT (err.code == WexprErrorCodeEmptyString, "Empty string");
+	WEXPR_UNITTEST_ASSERT (err.line == 1 && err.column == 17, "Position should be right");
 	
 	WEXPR_ERROR_FREE (err);
 WEXPR_UNITTEST_END ()
@@ -134,6 +156,8 @@ WEXPR_UNITTEST_SUITE_BEGIN (ExpressionErrors)
 	WEXPR_UNITTEST_SUITE_ADDTEST (ExpressionErrors, ExpressionErrorsMapKeysMustBeValues);
 	WEXPR_UNITTEST_SUITE_ADDTEST (ExpressionErrors, ExpressionErrorsReferenceMissingItsEndingBracket);
 	WEXPR_UNITTEST_SUITE_ADDTEST (ExpressionErrors, ExpressionErrorsReferenceInvalid);
+	WEXPR_UNITTEST_SUITE_ADDTEST (ExpressionErrors, ExpressionErrorsBlankIsError);
+	WEXPR_UNITTEST_SUITE_ADDTEST (ExpressionErrors, ExpressionErrorsJustCommentIsError);
 WEXPR_UNITTEST_SUITE_END ()
 
 #endif // WEXPR_TESTS_EXPRESSIONERRORS_H

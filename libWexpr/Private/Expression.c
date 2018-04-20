@@ -1137,7 +1137,7 @@ WexprExpression* wexpr_Expression_createFromLengthString (
 )
 {
 	WexprExpression* expr = malloc (sizeof(WexprExpression));
-	expr->m_type = WexprExpressionTypeNull;
+	expr->m_type = WexprExpressionTypeInvalid;
 	
 	PrivateParserState parserState;
 	s_privateParserState_init (&parserState);
@@ -1159,6 +1159,15 @@ WexprExpression* wexpr_Expression_createFromLengthString (
 		{
 			err.code = WexprErrorCodeExtraDataAfterParsingRoot;
 			err.message = strdup ("Extra data after parsing the root expression");
+			err.line = parserState.line;
+			err.column = parserState.column;
+		}
+		
+		if (expr->m_type == WexprExpressionTypeInvalid && err.code == WexprErrorCodeNone)
+		{
+			// we didnt get an expression and no error currently reported
+			err.code = WexprErrorCodeEmptyString;
+			err.message = strdup ("No expression found [remained invalid]");
 			err.line = parserState.line;
 			err.column = parserState.column;
 		}
