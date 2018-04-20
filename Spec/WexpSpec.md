@@ -31,13 +31,15 @@ _NormalExpression_: ![NormalExpression](diagram/NormalExpression.png)
 
 ### Null
 
-A null expression is just 'null' or 'nil'. If a document is completely empty without any expression, this is a valid null expression too (as an exception).
+A null expression is just 'null' or 'nil'.
 
 _Null_: ![Null EBNF](diagram/Null.png)
 
 ### Value:
 
 A value is a single value. A value can either be quoted (which allows the full range of a string) or as a bareword, which has a few character limitations. Things like numbers are also values such as 2.0. The implementation or program decodes the value to whatever type they wish to use it as. The list of restricted characters in barewords include: '*', '#', '@', '(', ')', '[', ']', '^', '\r', '\n', '\t', ' '. A bareword value also cannot be the words 'nil' or 'null' since those are null expressions.
+
+The implementation can decide to interpret values into child types as it desires. Commonly, true/false as a boolean type, and numbers as integers or floating point.
 
 _Value_: ![Value EBNF](diagram/Value.png)
 

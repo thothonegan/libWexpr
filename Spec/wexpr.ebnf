@@ -17,7 +17,7 @@ EscapableString ::= ([^\"] | EscapedCharacter)*
 
 EscapedCharacter ::= '\r' | '\n' | '\t' | '\"' | '\\'
 
-BinaryData ::= "^(" Base64Character* ")"
+BinaryData ::= "<" Base64Character* ">"
 
 Array ::= "#(" OptWS (Expression OptWS)* ")"
 Map ::= "@(" (OptWS Value OptWS Expression)* OptWS")"
