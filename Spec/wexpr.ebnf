@@ -9,7 +9,7 @@ Null ::= "null" | "nil"
 
 Value ::= BareValue | QuotedValue
 
-BareValue ::= "[^\*#@\(\);\[\]\^\r\n \t]+"
+BareValue ::= "[^\*#@\(\);\[\]\^<>\r\n \t]+"
 
 QuotedValue ::= '"' EscapableString '"'
 
