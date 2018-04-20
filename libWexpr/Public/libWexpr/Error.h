@@ -51,6 +51,7 @@ enum
 	WexprErrorCodeInvalidUTF8, ///< UTF8 was invalid.
 	WexprErrorCodeExtraDataAfterParsingRoot, ///< Got extra data after we parsed the first object from the wexpr.
 	WexprErrorCodeEmptyString, ///< An empty string was given when we require one.
+	WexprErrorCodeInvalidStringEscape, ///< A string contained an invalid escape
 	WexprErrorCodeMapMissingEndParen, ///< Parsing a map its missing the ending paren
 	WexprErrorCodeMapKeyMustBeAValue, ///< Map keys must be a value
 	WexprErrorCodeReferenceMissingEndBracket, ///< A reference is missing an end bracket

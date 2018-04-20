@@ -75,6 +75,19 @@ WEXPR_UNITTEST_BEGIN (ExpressionCanCreateQuotedValue)
 
 WEXPR_UNITTEST_END ()
 
+WEXPR_UNITTEST_BEGIN (ExpressionCanCreateEscapedValue)
+	WexprError err = WEXPR_ERROR_INIT();
+	WexprExpression* valueExpr = wexpr_Expression_createFromString(" \"val\\\"\" ", WexprParseFlagNone, &err);
+	
+	WEXPR_UNITTEST_ASSERT (valueExpr, "Cannot create value expression");
+	WEXPR_UNITTEST_ASSERT (wexpr_Expression_type(valueExpr) == WexprExpressionTypeValue, "Should be a value expression");
+	WEXPR_UNITTEST_ASSERT (strcmp (wexpr_Expression_value(valueExpr), "val\"") == 0, "Expression should be 'val'");
+	
+	wexpr_Expression_destroy(valueExpr);
+	WEXPR_ERROR_FREE (err);
+
+WEXPR_UNITTEST_END ()
+
 WEXPR_UNITTEST_BEGIN (ExpressionCanCreateNumber)
 	WexprError err = WEXPR_ERROR_INIT();
 	WexprExpression* valueExpr = wexpr_Expression_createFromString("2.45", WexprParseFlagNone, &err);
@@ -396,6 +409,7 @@ WEXPR_UNITTEST_SUITE_BEGIN (Expression)
 	WEXPR_UNITTEST_SUITE_ADDTEST (Expression, ExpressionCanCreateNull);
 	WEXPR_UNITTEST_SUITE_ADDTEST (Expression, ExpressionCanCreateValue);
 	WEXPR_UNITTEST_SUITE_ADDTEST (Expression, ExpressionCanCreateQuotedValue);
+	WEXPR_UNITTEST_SUITE_ADDTEST (Expression, ExpressionCanCreateEscapedValue);
 	WEXPR_UNITTEST_SUITE_ADDTEST (Expression, ExpressionCanCreateNumber);
 	WEXPR_UNITTEST_SUITE_ADDTEST (Expression, ExpressionCanCreateArray);
 	WEXPR_UNITTEST_SUITE_ADDTEST (Expression, ExpressionCanCreateMap);
