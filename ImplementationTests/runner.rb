@@ -6,7 +6,7 @@ scriptDir = File.expand_path(File.dirname(__FILE__))
 
 commandToRun = ""
 ARGV.each do|a|
-  commandToRun += (a + " ")
+	commandToRun += ('"' + a + '"' + " ")
 end
 
 if commandToRun == "" or ! commandToRun.include? "{}"
