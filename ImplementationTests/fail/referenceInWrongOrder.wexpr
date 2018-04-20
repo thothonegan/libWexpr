@@ -1,0 +1,4 @@
+@(
+	a *[b] ; cannot use a ref before its defined
+	c [b]d
+)
