@@ -794,6 +794,32 @@ static PrivateStringRef s_Expression_parseFromString (WexprExpression* self, Pri
 		return str;
 	}
 	
+	// null expressions
+	else if (
+		str.size >= 3 && s_StringRef_isEqual(
+			s_StringRef_slice2 (str, 0, 3), s_StringRef_create("nil")
+		)
+	)
+	{
+		self->m_type = WexprExpressionTypeNull;
+		parserState->column += 3;
+		
+		
+		return s_StringRef_slice (str, 3);
+	}
+	
+	else if (
+		str.size >= 4 && s_StringRef_isEqual(
+			s_StringRef_slice2 (str, 0, 4), s_StringRef_create("null")
+		)
+	)
+	{
+		self->m_type = WexprExpressionTypeNull;
+		parserState->column += 4;
+		
+		return s_StringRef_slice (str, 4);
+	}
+	
 	else // its a value
 	{
 		PrivateWexprStringValue val = s_valueOfString (str, parserState, error);
@@ -858,8 +884,10 @@ static PrivateStringRef p_wexpr_Expression_appendStringRepresentationToAllocated
 	
 	if (type == WexprExpressionTypeNull)
 	{
-		fprintf (stderr, "p_wexpr_Expression_appendStringRepresentationToAllocatedBuffer() - Cannot represent a null expression.\n");
-		abort();
+		char* newBuffer = realloc(buffer, 4);
+		
+		strncpy (newBuffer+curBufferSize, "null", 4);
+		return s_stringRef_createFromPointerSize(newBuffer, 4);
 	}
 	
 	else if (type == WexprExpressionTypeValue)

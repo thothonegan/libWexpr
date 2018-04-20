@@ -373,6 +373,25 @@ WEXPR_UNITTEST_BEGIN(ExpressionCanSetInMap)
 	
 WEXPR_UNITTEST_END()
 
+WEXPR_UNITTEST_BEGIN(ExpressionCanHandleNullExpression)
+	WexprError err = WEXPR_ERROR_INIT();
+	WexprExpression* nullExpr = wexpr_Expression_createFromString("null", WexprParseFlagNone, &err);
+	
+	WEXPR_UNITTEST_ASSERT (nullExpr, "Cannot create null expression");
+	WEXPR_UNITTEST_ASSERT (wexpr_Expression_type(nullExpr) == WexprExpressionTypeNull, "Should be a null expression");
+	
+	wexpr_Expression_destroy(nullExpr);
+	
+	WexprExpression* nilExpr = wexpr_Expression_createFromString("nil", WexprParseFlagNone, &err);
+	
+	WEXPR_UNITTEST_ASSERT (nilExpr, "Cannot create nil expression");
+	WEXPR_UNITTEST_ASSERT (wexpr_Expression_type(nilExpr) == WexprExpressionTypeNull, "Should be a nil expression");
+	
+	wexpr_Expression_destroy(nilExpr);
+	WEXPR_ERROR_FREE (err);
+	
+WEXPR_UNITTEST_END()
+
 WEXPR_UNITTEST_SUITE_BEGIN (Expression)
 	WEXPR_UNITTEST_SUITE_ADDTEST (Expression, ExpressionCanCreateNull);
 	WEXPR_UNITTEST_SUITE_ADDTEST (Expression, ExpressionCanCreateValue);
@@ -389,6 +408,7 @@ WEXPR_UNITTEST_SUITE_BEGIN (Expression)
 	WEXPR_UNITTEST_SUITE_ADDTEST (Expression, ExpressionCanSetValue);
 	WEXPR_UNITTEST_SUITE_ADDTEST (Expression, ExpressionCanAddToArray);
 	WEXPR_UNITTEST_SUITE_ADDTEST (Expression, ExpressionCanSetInMap);
+	WEXPR_UNITTEST_SUITE_ADDTEST (Expression, ExpressionCanHandleNullExpression);
 WEXPR_UNITTEST_SUITE_END ()
 
 #endif // WEXPR_TESTS_EXPRESSION_H
