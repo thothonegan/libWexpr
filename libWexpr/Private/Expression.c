@@ -884,8 +884,10 @@ static PrivateStringRef p_wexpr_Expression_appendStringRepresentationToAllocated
 	
 	if (type == WexprExpressionTypeNull)
 	{
-		fprintf (stderr, "p_wexpr_Expression_appendStringRepresentationToAllocatedBuffer() - Cannot represent a null expression.\n");
-		abort();
+		char* newBuffer = realloc(buffer, 4);
+		
+		strncpy (newBuffer+curBufferSize, "null", 4);
+		return s_stringRef_createFromPointerSize(newBuffer, 4);
 	}
 	
 	else if (type == WexprExpressionTypeValue)

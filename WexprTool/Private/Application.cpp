@@ -138,17 +138,12 @@ int main (int argc, char** argv)
 		}
 		else
 		{
-			if (wexpr_Expression_type(expr) == WexprExpressionTypeNull)
-			{} // right now we cant really output a null expression
-			else
-			{
-				char* buffer = wexpr_Expression_createStringRepresentation (
-					expr, 0, WexprWriteFlagHumanReadable
-				);
+			char* buffer = wexpr_Expression_createStringRepresentation (
+				expr, 0, WexprWriteFlagHumanReadable
+			);
 				
-					s_writeAllOutputTo(results.outputPath, std::string(buffer));
-				free (buffer);
-			}
+				s_writeAllOutputTo(results.outputPath, std::string(buffer));
+			free (buffer);
 		}
 
 		wexpr_Expression_destroy (expr);
