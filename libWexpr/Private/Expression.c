@@ -261,6 +261,30 @@ static bool s_isWhitespace (char c)
 	return (c == ' ' || c == '\t' || s_isNewline(c));
 }
 
+static bool s_isNotBarewordSafe (char c)
+{
+	return (c == '#' || c == '@' || c == '(' || c == ')' || c == ';'
+		|| c == '[' || c == ']'
+		|| s_isWhitespace(c)
+	);
+}
+
+static bool s_isEscapeValid (char c)
+{
+	return (c == '"' || c == 'r' || c == 'n' || c == 't' || c == '\\');
+}
+
+static char s_valueForEscape (char c)
+{
+	if (c == '"') return '"';
+	if (c == 'r') return '\r';
+	if (c == 'n') return '\n';
+	if (c == 't') return '\t';
+	if (c == '\\') return '\\';
+	
+	return 0; // invalid escape
+}
+
 // trims the given string by removing whitespace or comments from the beginning of the string
 
 static PrivateStringRef s_trimFrontOfString (PrivateStringRef str, PrivateParserState* parserState)
@@ -343,75 +367,162 @@ static PrivateStringRef s_trimFrontOfString (PrivateStringRef str, PrivateParser
 
 typedef struct PrivateWexprStringValue
 {
-	PrivateStringRef value; // the value parsed
+	char* value; // the value parsed. You own (malloc)
 	size_t endIndex; // index the end was found (past the value)
 } PrivateWexprStringValue;
 
-static PrivateWexprStringValue s_valueOfString (
+// Will copy out the value of the string to a new buffer.
+// The buffer is mallocd and must be freed by the caller.
+// Returns NULL on failure.
+static PrivateWexprStringValue s_createValueOfString (
 	PrivateStringRef str,
 	PrivateParserState* parserState,
 	WexprError* error
 )
 {
-	bool needsCorrespondingQuote = false;
-	size_t valueStartPos = 0;
-	size_t pos = 0;
+	// two pass:
+	// first pass, get the length of the size
+	// second pass, store the buffer
+	
+	size_t bufferLength = 0;
+	bool isQuotedString = false;
+	bool isEscaped = false;
+	size_t pos = 0; // position we're parsing at
 	
 	if (str.ptr[0] == '"')
 	{
-		needsCorrespondingQuote = true;
+		isQuotedString = true;
 		++pos;
-		++valueStartPos;
 	}
 	
 	while (pos < str.size)
 	{
 		char c = str.ptr[pos];
 		
-		if (needsCorrespondingQuote)
+		if (isQuotedString)
 		{
-			// searching for quote
-			if (c == '"')
+			if (isEscaped)
 			{
-				// done!
-				PrivateWexprStringValue res = { s_StringRef_slice2 (str, valueStartPos, pos-valueStartPos), pos+1};
-				
-				return res;
+				// we're in an escape. is it valid?
+				if (s_isEscapeValid(c))
+				{
+					++bufferLength; // counts
+					isEscaped = false; // escape ended
+				}
+				else
+				{
+					if (error)
+					{
+						error->code = WexprErrorCodeInvalidStringEscape;
+						error->message = "Invalid escape found in the string";
+						error->column = parserState->column;
+						error->line = parserState->line;
+					}
+					
+					PrivateWexprStringValue ret;
+					ret.value = NULL;
+					ret.endIndex = pos;
+					return ret;
+				}
+			}
+			else
+			{
+				if (c == '"')
+				{
+					// end quote - part of us
+					++pos;
+					break;
+				}
+				else if (c == '\\')
+				{
+					// we're escaping
+					isEscaped = true;
+				}
+				else
+				{
+					// otherwise it's a character
+					++bufferLength;
+				}
 			}
 		}
-		
-		else // searching for whitespace/end
+		else
 		{
-			if (s_isWhitespace(c) || c == ')')
+			// have we ended the word?
+			if (s_isNotBarewordSafe(c))
 			{
-				// done! we hit a whitespace or an end construct
-				PrivateWexprStringValue res = { s_StringRef_slice2 (str, valueStartPos, pos-valueStartPos), pos};
-				
-				return res;
+				// ended - not part of us
+				break;
 			}
+			
+			// otherwise, its a character
+			++bufferLength;
 		}
 		
-		++pos; // next
+		++pos;
 	}
 	
-	// done, and didn't find. Return everything
-	// unless it was quote, in which its a parse error.
-	if (needsCorrespondingQuote)
+	size_t end = pos;
+	
+	// we now know our buffer size and the string has been checked
+	char* buffer = malloc(bufferLength+1);
+	if (!buffer) {
+		PrivateWexprStringValue ret;
+		ret.value = NULL;
+		ret.endIndex = end;
+		return ret;
+	}
+	
+	memset(buffer, 0, bufferLength+1);
+	
+	size_t writePos = 0;
+	pos = 0;
+	if (isQuotedString) pos = 1;
+	
+	while (writePos < bufferLength)
 	{
-		if (error)
+		char c = str.ptr[pos];
+		
+		if (isQuotedString)
 		{
-			error->code = WexprErrorCodeStringMissingEndingQuote;
-			error->message = strdup("String with quote is missing the end quote");
-			error->column = parserState->column;
-			error->line = parserState->line;
+			if (isEscaped)
+			{
+				char escapedValue = s_valueForEscape(c);
+				buffer[writePos] = escapedValue;
+				++writePos;
+				
+				isEscaped = false;
+			}
+			else
+			{
+				if (c == '\\')
+				{
+					// we're escaping
+					isEscaped = true;
+				}
+				else
+				{
+					// otherwise it's a character
+					buffer[writePos] = c;
+					++writePos;
+				}
+			}
+		}
+		else
+		{
+			// its a character
+			buffer[writePos] = c;
+			++writePos;
 		}
 		
-		PrivateWexprStringValue res = { s_StringRef_createInvalid(), 0 };
-		return res;
+		// next character
+		++pos;
 	}
 	
-	PrivateWexprStringValue res = { s_StringRef_slice2 (str, valueStartPos, pos-valueStartPos), pos};
-	return res;
+	PrivateWexprStringValue ret;
+	ret.value = buffer;
+	ret.endIndex = end;
+	
+	return ret;
 }
 
 typedef struct PrivateWexprValueStringProperties
@@ -436,10 +547,7 @@ static PrivateWexprValueStringProperties s_wexprValueStringProperties (PrivateSt
 		char c = ref.ptr[i];
 		
 		// see any symbols that makes it not bareword safe?
-		if (c == '#' || c == '@' || c == '(' || c == ')' || c == ';'
-			|| c == '[' || c == ']'
-			|| c == '\r' || c == '\n' || c == ' ' || c == '\t' // whitespace must preserve
-		)
+		if (s_isNotBarewordSafe(c))
 		{
 			props.isBarewordSafe = false;
 			break;
@@ -822,13 +930,13 @@ static PrivateStringRef s_Expression_parseFromString (WexprExpression* self, Pri
 	
 	else // its a value
 	{
-		PrivateWexprStringValue val = s_valueOfString (str, parserState, error);
+		PrivateWexprStringValue val = s_createValueOfString (str, parserState, error);
 		
 		if (error && error->code != WexprErrorCodeNone)
 			return s_StringRef_createInvalid();
 		
 		self->m_type = WexprExpressionTypeValue;
-		self->m_value.data = s_dupLengthString (val.value.ptr, val.value.size);
+		self->m_value.data = val.value;
 		
 		s_privateParserState_moveForwardBasedOnString (parserState,
 			s_StringRef_slice2(
