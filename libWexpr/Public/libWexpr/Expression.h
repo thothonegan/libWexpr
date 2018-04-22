@@ -87,6 +87,12 @@ WexprExpression* wexpr_Expression_createFromLengthString (
 );
 
 //
+/// \brief Creates an empty invalid expression. You own and must destroy.
+/// \return A newly created invalid expression, or null if it fails.
+//
+WexprExpression* wexpr_Expression_createInvalid (void);
+
+//
 /// \brief Creates an empty null expression. You own and must destroy.
 /// \return A newly created null expression, or null if it fails.
 //
