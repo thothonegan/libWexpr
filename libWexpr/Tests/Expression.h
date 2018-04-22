@@ -405,6 +405,25 @@ WEXPR_UNITTEST_BEGIN(ExpressionCanHandleNullExpression)
 	
 WEXPR_UNITTEST_END()
 
+WEXPR_UNITTEST_BEGIN(ExpressionCanHandleBinaryExpression)
+	WexprError err = WEXPR_ERROR_INIT();
+	WexprExpression* binExpr = wexpr_Expression_createFromString("<aGVsbG8=>", WexprParseFlagNone, &err);
+	
+	WEXPR_UNITTEST_ASSERT (binExpr, "Cannot create bin expression");
+	WEXPR_UNITTEST_ASSERT (wexpr_Expression_type(binExpr) == WexprExpressionTypeBinaryData, "Should be a binary expression");
+	
+	const void* buffer = wexpr_Expression_binaryData_data (binExpr);
+	size_t bufferSize = wexpr_Expression_binaryData_size (binExpr);
+	
+	WEXPR_UNITTEST_ASSERT (bufferSize == 5, "Should be size 5 when decoded");
+	WEXPR_UNITTEST_ASSERT (memcmp (buffer, "hello", bufferSize) == 0, "Expression should be 'hello'");
+	
+	wexpr_Expression_destroy(binExpr);
+	WEXPR_ERROR_FREE (err);
+	
+WEXPR_UNITTEST_END()
+
+
 WEXPR_UNITTEST_SUITE_BEGIN (Expression)
 	WEXPR_UNITTEST_SUITE_ADDTEST (Expression, ExpressionCanCreateNull);
 	WEXPR_UNITTEST_SUITE_ADDTEST (Expression, ExpressionCanCreateValue);
@@ -423,6 +442,7 @@ WEXPR_UNITTEST_SUITE_BEGIN (Expression)
 	WEXPR_UNITTEST_SUITE_ADDTEST (Expression, ExpressionCanAddToArray);
 	WEXPR_UNITTEST_SUITE_ADDTEST (Expression, ExpressionCanSetInMap);
 	WEXPR_UNITTEST_SUITE_ADDTEST (Expression, ExpressionCanHandleNullExpression);
+	WEXPR_UNITTEST_SUITE_ADDTEST (Expression, ExpressionCanHandleBinaryExpression);
 WEXPR_UNITTEST_SUITE_END ()
 
 #endif // WEXPR_TESTS_EXPRESSION_H
