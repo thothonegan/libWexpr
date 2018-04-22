@@ -470,6 +470,23 @@ static PrivateWexprStringValue s_createValueOfString (
 		++pos;
 	}
 	
+	if (bufferLength == 0 && !isQuotedString) // cannot have an empty barewords string
+	{
+		if (error)
+		{
+			error->code = WexprErrorCodeEmptyString;
+			error->message = strdup("Was told to parse an empty string");
+			error->line = parserState->line;
+			error->column = parserState->column;
+		}
+		
+		PrivateWexprStringValue ret;
+		ret.value = NULL;
+		ret.endIndex = 0;
+		
+		return ret;
+	}
+	
 	size_t end = pos;
 	
 	// we now know our buffer size and the string has been checked
@@ -801,8 +818,22 @@ static PrivateStringRef s_Expression_parseFromString (WexprExpression* self, Pri
 					return s_StringRef_createInvalid();
 				}
 				
-				WexprExpression* valueExpression = wexpr_Expression_createNull();
+				WexprExpression* valueExpression = wexpr_Expression_createInvalid();
 				str = s_Expression_parseFromString(valueExpression, str, parseFlags, parserState, error);
+				
+				if (valueExpression->m_type == WexprExpressionTypeInvalid)
+				{
+					// it wasnt filled in! no key found.
+					error->code = WexprErrorCodeMapNoValue;
+					error->message = strdup("Map key must have a value");
+					error->line = prevLine;
+					error->column = prevColumn;
+				
+					wexpr_Expression_destroy(keyExpression);
+					wexpr_Expression_destroy(valueExpression);
+					
+					return s_StringRef_createInvalid();
+				}
 				
 				// ok we now have the key and the value
 				// both malloc so can free later
@@ -1019,7 +1050,7 @@ static PrivateStringRef s_Expression_parseFromString (WexprExpression* self, Pri
 		return s_StringRef_slice (str, endingQuote+1);
 	}
 	
-	else // its a value
+	else if (str.size >= 1)// its a value : must be at least one character
 	{
 		PrivateWexprStringValue val = s_createValueOfString (str, parserState, error);
 		
@@ -1037,6 +1068,9 @@ static PrivateStringRef s_Expression_parseFromString (WexprExpression* self, Pri
 		
 		return s_StringRef_slice (str, val.endIndex);
 	}
+	
+	// otherwise, we have no idea what happened
+	return s_StringRef_createInvalid();
 }
 
 static int s_freeHashData (any_t userData, any_t data)
@@ -1430,6 +1464,14 @@ WexprExpression* wexpr_Expression_createFromLengthString (
 	return expr;
 }
 
+
+WexprExpression* wexpr_Expression_createInvalid (void)
+{
+	WexprExpression* expr = malloc (sizeof(WexprExpression));
+	expr->m_type = WexprExpressionTypeInvalid;
+	
+	return expr;
+}
 
 WexprExpression* wexpr_Expression_createNull (void)
 {

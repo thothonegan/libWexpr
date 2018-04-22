@@ -54,6 +54,7 @@ enum
 	WexprErrorCodeInvalidStringEscape, ///< A string contained an invalid escape
 	WexprErrorCodeMapMissingEndParen, ///< Parsing a map its missing the ending paren
 	WexprErrorCodeMapKeyMustBeAValue, ///< Map keys must be a value
+	WexprErrorCodeMapNoValue, ///< A key had no value before the map ended
 	WexprErrorCodeReferenceMissingEndBracket, ///< A reference is missing an end bracket
 	WexprErrorCodeReferenceInsertMissingEndBracket, ///< A reference we tried to insert is missing an end bracket
 	WexprErrorCodeReferenceUnknownReference, ///< Tried to look for a reference, but it didn't exist.
