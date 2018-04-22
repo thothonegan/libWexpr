@@ -28,3 +28,10 @@ true ; and this - basically anything thats a single string or quoted
 [asdf] 20 ; this is a reference. In this case 'asdf' is 20.
 *[asdf] ; this places a reference. Would place '20' here in the file.
 ```
+
+
+Related Repositories
+--------------------
+
+- Atom syntax - https://github.com/thothonegan/language-wexpr/
+- Lua implementation - https://github.com/tyraindreams/libWexpr.lua
