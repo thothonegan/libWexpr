@@ -148,6 +148,17 @@ WEXPR_UNITTEST_BEGIN (ExpressionErrorsJustCommentIsError)
 	WEXPR_ERROR_FREE (err);
 WEXPR_UNITTEST_END ()
 
+WEXPR_UNITTEST_BEGIN (ExpressionErrorsInvalidReferenceName)
+	WexprError err = WEXPR_ERROR_INIT();
+	WexprExpression* valueExpr = wexpr_Expression_createFromString("[asd-b] c", WexprParseFlagNone, &err);
+	
+	WEXPR_UNITTEST_ASSERT (!valueExpr, "Shouldnt generate expression");
+	WEXPR_UNITTEST_ASSERT (err.code == WexprErrorCodeReferenceInvalidName, "Invalid ref name");
+	WEXPR_UNITTEST_ASSERT (err.line == 1 && err.column == 1, "Position should be right");
+	
+	WEXPR_ERROR_FREE (err);
+WEXPR_UNITTEST_END ()
+
 WEXPR_UNITTEST_SUITE_BEGIN (ExpressionErrors)
 	WEXPR_UNITTEST_SUITE_ADDTEST (ExpressionErrors, ExpressionErrorsEmptyIsInvalid);
 	WEXPR_UNITTEST_SUITE_ADDTEST (ExpressionErrors, ExpressionErrorsExtraDataAfterExpression);
@@ -158,6 +169,7 @@ WEXPR_UNITTEST_SUITE_BEGIN (ExpressionErrors)
 	WEXPR_UNITTEST_SUITE_ADDTEST (ExpressionErrors, ExpressionErrorsReferenceInvalid);
 	WEXPR_UNITTEST_SUITE_ADDTEST (ExpressionErrors, ExpressionErrorsBlankIsError);
 	WEXPR_UNITTEST_SUITE_ADDTEST (ExpressionErrors, ExpressionErrorsJustCommentIsError);
+	WEXPR_UNITTEST_SUITE_ADDTEST (ExpressionErrors, ExpressionErrorsInvalidReferenceName);
 WEXPR_UNITTEST_SUITE_END ()
 
 #endif // WEXPR_TESTS_EXPRESSIONERRORS_H

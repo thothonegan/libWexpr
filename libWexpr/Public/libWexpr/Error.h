@@ -57,7 +57,8 @@ enum
 	WexprErrorCodeReferenceMissingEndBracket, ///< A reference is missing an end bracket
 	WexprErrorCodeReferenceInsertMissingEndBracket, ///< A reference we tried to insert is missing an end bracket
 	WexprErrorCodeReferenceUnknownReference, ///< Tried to look for a reference, but it didn't exist.
-	WexprErrorCodeArrayMissingEndParen ///< Tried to find the ending paren, but it didn't exist.
+	WexprErrorCodeArrayMissingEndParen, ///< Tried to find the ending paren, but it didn't exist.
+	WexprErrorCodeReferenceInvalidName ///< A reference has an invalid character in it
 };
 
 typedef uint32_t WexprLineNumber;
