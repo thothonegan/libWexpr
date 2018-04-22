@@ -19,9 +19,12 @@ project (libWexpr)
 	set (libWexpr_PRIVATE_HEADERS
 		${libWexpr_SOURCE_DIR}/Private/ThirdParty/sglib/sglib.h
 		${libWexpr_SOURCE_DIR}/Private/ThirdParty/c_hashmap/hashmap.h
+		
+		${libWexpr_SOURCE_DIR}/Private/Base64.h
 	)
 
 	set (libWexpr_SOURCES
+		${libWexpr_SOURCE_DIR}/Private/Base64.c
 		${libWexpr_SOURCE_DIR}/Private/Expression.c
 		${libWexpr_SOURCE_DIR}/Private/ExpressionType.c
 		${libWexpr_SOURCE_DIR}/Private/libWexpr.c

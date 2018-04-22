@@ -35,6 +35,8 @@
 #include <stdbool.h>
 #include <string.h>
 
+#include "Base64.h"
+
 #include "ThirdParty/sglib/sglib.h"
 #include "ThirdParty/c_hashmap/hashmap.h"
 
@@ -64,6 +66,12 @@ typedef struct WexprExpressionPrivateValue
 	char* data; // UTF-8 zero terminated data, we own.
 } WexprExpressionPrivateValue;
 
+typedef struct WexprExpressionPrivateBinaryData
+{
+	void* data;
+	size_t size; // in bytes
+} WexprExpressionPrivateBinaryData;
+
 typedef struct WexprExpressionPrivateMap
 {
 	map_t hash;
@@ -89,6 +97,7 @@ struct WexprExpression
 		WexprExpressionPrivateValue m_value;
 		WexprExpressionPrivateMap m_map;
 		WexprExpressionPrivateArray m_array;
+		WexprExpressionPrivateBinaryData m_binaryData;
 	};
 };
 
@@ -662,6 +671,7 @@ static PrivateStringRef s_Expression_parseFromString (WexprExpression* self, Pri
 	// if first two characters are #(, we're an array.
 	// if @( we're a map.
 	// if [] we're a ref.
+	// if < we're a binary string
 	// otherwise, we're a value.
 	
 	if (str.size >= 2 && s_StringRef_isEqual(s_StringRef_slice2 (str, 0, 2), s_StringRef_create("#(")))
@@ -964,6 +974,51 @@ static PrivateStringRef s_Expression_parseFromString (WexprExpression* self, Pri
 		return s_StringRef_slice (str, 4);
 	}
 	
+	else if (
+		str.size >= 1 && s_StringRef_isEqual(
+			s_StringRef_slice2(str, 0, 1), s_StringRef_create("<")
+		)
+	)
+	{
+		// look for the ending >
+		size_t endingQuote = s_StringRef_find(str, '>');
+		if (endingQuote == s_InvalidIndex)
+		{
+			// not found
+			error->code = WexprErrorCodeBinaryDataNoEnding;
+			error->message = strdup ("Tried to find the ending > for binary data, but not found.");
+			error->line = parserState->line;
+			error->column = parserState->column;
+			
+			return s_StringRef_createInvalid();
+		}
+		
+		Base64IBuffer inputBuf;
+		inputBuf.buffer = str.ptr+1;
+		inputBuf.size = endingQuote-1; // -1 for starting quote. ending was not part.
+		Base64Buffer outBuf = base64_decode(inputBuf);
+		
+		if (outBuf.buffer == NULL)
+		{
+			error->code = WexprErrorCodeBinaryDataInvalidBase64;
+			error->message = strdup ("Unable to decode the base64 data.");
+			error->line = parserState->line;
+			error->column = parserState->column;
+			
+			return s_StringRef_createInvalid();
+		}
+		
+		self->m_type = WexprExpressionTypeBinaryData;
+		self->m_binaryData.data = outBuf.buffer;
+		self->m_binaryData.size = outBuf.size;
+		
+		s_privateParserState_moveForwardBasedOnString (parserState,
+			s_StringRef_slice2 (str, 0, endingQuote+1)
+		);
+		
+		return s_StringRef_slice (str, endingQuote+1);
+	}
+	
 	else // its a value
 	{
 		PrivateWexprStringValue val = s_createValueOfString (str, parserState, error);
@@ -1060,6 +1115,35 @@ static PrivateStringRef p_wexpr_Expression_appendStringRepresentationToAllocated
 		}
 		
 		return s_stringRef_createFromPointerSize(newBuffer, newSize);
+	}
+	
+	else if (type == WexprExpressionTypeBinaryData)
+	{
+		// binary data - encode as Base64
+		const void* buf = wexpr_Expression_binaryData_data(self);
+		size_t size = wexpr_Expression_binaryData_size(self);
+		
+		Base64IBuffer ibuf;
+		ibuf.buffer = buf;
+		ibuf.size = size;
+		
+		Base64Buffer outBuf = base64_encode(ibuf);
+		size_t newSize = curBufferSize + 2 + outBuf.size;
+		char* newBuffer = realloc(buffer, newSize);
+		strncpy (newBuffer+curBufferSize, "<", 1); curBufferSize += 1;
+		
+		strncpy (newBuffer+curBufferSize, outBuf.buffer, outBuf.size);
+		curBufferSize += outBuf.size;
+		
+		strncpy(newBuffer+curBufferSize, ">", 1);
+		curBufferSize += 1;
+		
+		// cleanup our buffer
+		free (outBuf.buffer);
+		outBuf.buffer = NULL;
+		
+		return s_stringRef_createFromPointerSize(newBuffer, newSize);
+		
 	}
 	
 	else if (type == WexprExpressionTypeArray)
@@ -1414,6 +1498,12 @@ void wexpr_Expression_changeType (WexprExpression* self, WexprExpressionType typ
 		free (self->m_value.data);
 	}
 	
+	else if (self->m_type == WexprExpressionTypeBinaryData)
+	{
+		free(self->m_binaryData.data);
+		self->m_binaryData.size = 0;
+	}
+	
 	else if (self->m_type == WexprExpressionTypeArray)
 	{
 		struct sglib_WexprExpressionPrivateArrayElement_iterator it;
@@ -1440,6 +1530,12 @@ void wexpr_Expression_changeType (WexprExpression* self, WexprExpressionType typ
 	if (self->m_type == WexprExpressionTypeValue)
 	{
 		self->m_value.data = NULL;
+	}
+	
+	else if (self->m_type == WexprExpressionTypeBinaryData)
+	{
+		self->m_binaryData.data = NULL;
+		self->m_binaryData.size = 0;
 	}
 	
 	else if (self->m_type == WexprExpressionTypeArray)
@@ -1496,6 +1592,38 @@ void wexpr_Expression_valueSetLengthString (WexprExpression* self, const char* s
 	self->m_value.data = malloc(length+1);
 	memcpy (self->m_value.data, str, length);
 	self->m_value.data[length] = 0;
+}
+
+// --- BinaryData
+
+const void* wexpr_Expression_binaryData_data (WexprExpression* self)
+{
+	if (self->m_type != WexprExpressionTypeBinaryData)
+		return NULL;
+	
+	return self->m_binaryData.data;
+}
+
+size_t wexpr_Expression_binaryData_size (WexprExpression* self)
+{
+	if (self->m_type != WexprExpressionTypeBinaryData)
+		return 0;
+	
+	return self->m_binaryData.size;
+}
+
+void wexpr_Expression_binaryData_setValue (WexprExpression* self, void* buffer, size_t byteSize)
+{
+	if (self->m_type != WexprExpressionTypeBinaryData)
+		return;
+	
+	free(self->m_binaryData.data);
+	self->m_binaryData.size = byteSize;
+	self->m_binaryData.data = malloc(byteSize);
+	if (!self->m_binaryData.data)
+		return; // unable to allocate
+	
+	memcpy (self->m_binaryData.data, buffer, byteSize);
 }
 
 // --- Array

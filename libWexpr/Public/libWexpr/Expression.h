@@ -52,6 +52,7 @@ LIBWEXPR_EXTERN_C_BEGIN()
 ///     a number: 2.3
 /// - an array: #(a b c)
 /// - a map \@(key1 value1 key2 value2)
+/// - a binary data as Base64: \<SGlzdG9yeSBtYXkgbm90IHJlcGVhdCwgYnV0IGl0IHJoeW1lcy4=\>
 ///
 /// Comments ;[endofline] or ;(--...--) are not stored and are stripped on import.
 /// References [asdf] *[asdf] are also only interpreted on import, and thrown away. (? we might be able to keep it if we're storing the tree anyways).
@@ -156,6 +157,26 @@ void wexpr_Expression_valueSet (WexprExpression* self, const char* str);
 /// \brief Set the value of the expression using a string with a length.
 //
 void wexpr_Expression_valueSetLengthString (WexprExpression* self, const char* str, size_t length);
+
+/// \}
+
+/// \name Binary Data
+/// \{
+
+//
+/// \brief Return the data of the expression. Will return null if not a binary data.
+//
+const void* wexpr_Expression_binaryData_data (WexprExpression* self);
+
+//
+/// \brief Return the buffer size of the expression. Will return 0 if not binary data.
+//
+size_t wexpr_Expression_binaryData_size (WexprExpression* self);
+
+//
+/// \brief Set the binary data to use. Will copy it in.
+//
+void wexpr_Expression_binaryData_setValue (WexprExpression* self, void* buffer, size_t byteSize);
 
 /// \}
 
