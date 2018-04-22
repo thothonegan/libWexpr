@@ -51,7 +51,7 @@ enum
 	WexprExpressionTypeValue = 1, ///< A value. Can be a number, quoted, or token. Must be UTF-8 safe.
 	WexprExpressionTypeArray = 2, ///< An array of items where order matters.
 	WexprExpressionTypeMap   = 3,  ///< An array of items where each pair is a key/value pair. Not ordered. Keys are required to be values currently.
-	
+	WexprExpressionTypeBinaryData = 4, ///< A set of binary data, which is encoded in text format as base64.
 	
 	WexprExpressionTypeInvalid = 255 ///< Invalid expression - not filled in or usable
 };
