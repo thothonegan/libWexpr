@@ -61,7 +61,14 @@ enum
 	WexprErrorCodeArrayMissingEndParen, ///< Tried to find the ending paren, but it didn't exist.
 	WexprErrorCodeReferenceInvalidName, ///< A reference has an invalid character in it
 	WexprErrorCodeBinaryDataNoEnding, ///< Binary data had no ending <
-	WexprErrorCodeBinaryDataInvalidBase64 ///< Unable to parse the base64 data
+	WexprErrorCodeBinaryDataInvalidBase64, ///< Unable to parse the base64 data
+	
+	WexprErrorCodeBinaryInvalidHeader, ///< The binary header didn't make sense
+	WexprErrorCodeBinaryUnknownVersion, ///< The version was unknown
+	WexprErrorCodeBinaryMultipleExpressions, ///< Found multiple expression chunks
+	WexprErrorCodeBinaryChunkBiggerThanData, ///< The chunk size said to expand past the buffer size
+	WexprErrorCodeBinaryChunkNotBigEnough, ///< The length of buffer given wasnt't big enough for a valid chunk.
+	WexprErrorCodeBinaryUnknownCompression ///< Unknown compression method received
 };
 
 typedef uint32_t WexprLineNumber;

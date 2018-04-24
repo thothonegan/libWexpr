@@ -47,7 +47,13 @@ class CommandLineParser
 			HumanReadable,
 			
 			/// Validate the wexpr, output 'true' or 'false'
-			Validate
+			Validate,
+			
+			/// Minify the input
+			Mini,
+			
+			/// Convert the wexpr to binary
+			Binary
 		};
 		
 		struct Results

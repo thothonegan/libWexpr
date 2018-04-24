@@ -30,6 +30,8 @@
 
 #include <libWexpr/Expression.h>
 
+#include <libWexpr/Endian.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -656,6 +658,233 @@ static void s_Expression_copyInto (WexprExpression* self, WexprExpression* rhs)
 		default:
 		{} // ignore
 	}
+}
+
+// returns the part of the buffer remaining
+// will load into self, setting up everything. Assumes we're empty/null to start.
+static WexprBuffer s_Expression_parseFromBinaryChunk (WexprExpression* self, WexprBuffer data, WexprError* error)
+{
+	
+	if (data.byteSize < (sizeof(uint32_t) + sizeof(uint8_t)))
+	{
+		if (error)
+		{
+			error->message = strdup ("Chunk not big enough for header");
+			error->code = WexprErrorCodeBinaryChunkNotBigEnough;
+		}
+		
+		WexprBuffer buf;
+		buf.byteSize = 0; buf.data = NULL;
+		return buf;
+	}
+	
+	const void* buf = data.data;
+	
+	#define BUFCAST(buf, position, type) ((type)(buf+(position)))
+	
+	uint32_t size = wexpr_bigUInt32ToNative(*BUFCAST(buf, 0, uint32_t*));
+	uint8_t chunkType = *BUFCAST(buf, 4, uint8_t*);
+	
+	size_t readAmount = sizeof(uint32_t) + sizeof(uint8_t);
+	
+	#define RETURN_REST() \
+		{ \
+			WexprBuffer rest; \
+			rest.byteSize = data.byteSize - readAmount; \
+			rest.data = buf + readAmount; \
+			return rest; \
+		} while (0)
+		
+	if (chunkType == WexprExpressionTypeNull)
+	{
+		// nothing more to do
+		wexpr_Expression_changeType(self, WexprExpressionTypeNull);
+		
+		RETURN_REST();
+	}
+	
+	else if (chunkType == WexprExpressionTypeValue)
+	{
+		// data is the entire binary data
+		wexpr_Expression_changeType(self, WexprExpressionTypeValue);
+		wexpr_Expression_valueSetLengthString(self, 
+			BUFCAST(buf, readAmount, const char*), size
+		);
+		
+		readAmount += size;
+		
+		RETURN_REST();
+	}
+	
+	else if (chunkType == WexprExpressionTypeArray)
+	{
+		// data is child chunks
+		wexpr_Expression_changeType(self, WexprExpressionTypeArray);
+		
+		size_t curPos = 0;
+		
+		// build children as needed
+		while (curPos < size)
+		{
+			// read a new element
+			size_t startSize = size-curPos;
+			WexprBuffer inBuf;
+			inBuf.data = BUFCAST(buf, readAmount+curPos, const void*);
+			inBuf.byteSize = startSize;
+			
+			WexprExpression* childExpr = wexpr_Expression_createInvalid();
+			WexprBuffer remaining = s_Expression_parseFromBinaryChunk(
+				childExpr,
+				inBuf,
+				error
+			);
+			
+			curPos += (startSize - remaining.byteSize);
+			
+			if (remaining.data == NULL)
+			{
+				// failure when parsing the array
+				WexprBuffer buf;
+				buf.byteSize = 0; buf.data = NULL;
+				return buf;
+			}
+			
+			// otherwise, add it
+			WexprExpressionPrivateArrayElement* lelem = malloc(sizeof(WexprExpressionPrivateArrayElement));
+				lelem->expression = childExpr;
+				lelem->next = NULL;
+				
+			WexprExpressionPrivateArrayElement* endOfList = self->m_array.list;
+			if (endOfList) {
+				while (endOfList->next) { endOfList = endOfList->next; }
+				endOfList->next = lelem;
+			}
+			else
+			{
+				self->m_array.list = lelem;
+			}
+			
+			(self->m_array.listCount)++;
+		}
+		
+		readAmount += curPos;
+		RETURN_REST();
+	}
+	
+	else if (chunkType == WexprExpressionTypeMap)
+	{
+		// data is key,value chunks
+		wexpr_Expression_changeType(self, WexprExpressionTypeMap);
+		
+		size_t curPos = 0;
+		
+		// build children as needed
+		while (curPos < size)
+		{
+			// read a new key
+			size_t startSize = size-curPos;
+			WexprBuffer inBuf;
+			inBuf.data = BUFCAST(buf, readAmount+curPos, const void*);
+			inBuf.byteSize = startSize;
+			
+			WexprExpression* keyExpression = wexpr_Expression_createInvalid();
+			WexprBuffer remaining = s_Expression_parseFromBinaryChunk(
+				keyExpression,
+				inBuf,
+				error
+			);
+			
+			size_t keySize = (startSize - remaining.byteSize);
+			curPos += keySize;
+			
+			if (remaining.data == NULL)
+			{
+				// failure when parsing the child
+				WexprBuffer buf;
+				buf.byteSize = 0; buf.data = NULL;
+				return buf;
+			}
+			
+			// now parse the value
+			WexprExpression* valueExpr = wexpr_Expression_createInvalid();
+			remaining = s_Expression_parseFromBinaryChunk(
+				valueExpr,
+				remaining,
+				error
+			);
+			
+			curPos += (startSize - remaining.byteSize - keySize);
+			
+			if (remaining.data == NULL)
+			{
+				// failure when parsing the child
+				WexprBuffer buf;
+				buf.byteSize = 0; buf.data = NULL;
+				return buf;
+			}
+			
+			// now add it
+			// both malloc so can free later
+			WexprExpressionPrivateMapElement* elem = malloc (sizeof(WexprExpressionPrivateMapElement));
+			elem->key = strdup(wexpr_Expression_value(keyExpression));
+			elem->value = valueExpr;
+			
+			hashmap_put(self->m_map.hash, elem->key, elem);
+			
+			// destroy our key since thats not stored anywhere
+			wexpr_Expression_destroy(keyExpression);
+		}
+		
+		readAmount += curPos;
+		RETURN_REST();
+	}
+	
+	else if (chunkType == WexprExpressionTypeBinaryData)
+	{
+		// data is the entire binary data
+		// first byte is the compression
+		uint8_t compression = *BUFCAST(buf, 5, uint8_t*);
+		
+		if (compression != 0x00)
+		{
+			if (error)
+			{
+				error->message = strdup ("Unknown compression method to use");
+				error->code = WexprErrorCodeBinaryUnknownCompression;
+			}
+			
+			WexprBuffer buf;
+			buf.byteSize = 0; buf.data = NULL;
+			return buf;
+		}
+		
+		// raw compression
+		wexpr_Expression_changeType(self, WexprExpressionTypeBinaryData);
+		wexpr_Expression_binaryData_setValue(self, 
+			BUFCAST(buf, readAmount+1, const char*), size-1
+		);
+		
+		readAmount += size;
+		
+		RETURN_REST();
+	}
+	
+	else
+	{
+		// unknown type
+		if (error)
+		{
+			error->message = strdup ("Unknown chunk type to read");
+			error->code = WexprErrorCodeBinaryChunkNotBigEnough;
+		}
+		
+		WexprBuffer rest;
+		rest.byteSize = 0; rest.data = NULL;
+		return rest;
+	}
+	
+	#undef BUFCAST
+	#undef RETURN_REST
 }
 
 // returns the part of the string remaining
@@ -1464,6 +1693,38 @@ WexprExpression* wexpr_Expression_createFromLengthString (
 	return expr;
 }
 
+WexprExpression* wexpr_Expression_createFromBinaryChunk (
+	const void* data, size_t length, WexprError* error
+)
+{
+	WexprExpression* expr = malloc (sizeof(WexprExpression));
+	expr->m_type = WexprExpressionTypeInvalid;
+	
+	WexprError err = WEXPR_ERROR_INIT();
+	
+	WexprBuffer inBuf;
+	inBuf.data = data;
+	inBuf.byteSize = length;
+	
+	WexprBuffer buf = s_Expression_parseFromBinaryChunk (
+		expr, inBuf, &err
+	);
+	
+	if (err.code != WexprErrorCodeNone)
+	{
+		wexpr_Expression_destroy (expr);
+		expr = NULL;
+		
+		if (error)
+		{
+			WEXPR_ERROR_MOVE(error, &err);
+		}
+		
+		WEXPR_ERROR_FREE (err);
+	}
+	
+	return expr;
+}
 
 WexprExpression* wexpr_Expression_createInvalid (void)
 {
@@ -1603,6 +1864,124 @@ char* wexpr_Expression_createStringRepresentation (WexprExpression* self, size_t
 	char* buf = realloc( (void*)ref.ptr, ref.size+1);
 	buf[ref.size] = 0;
 	
+	return buf;
+}
+
+WexprMutableBuffer wexpr_Expression_createBinaryRepresentation (WexprExpression* self)
+{
+	WexprMutableBuffer buf;
+	buf.byteSize = 0;
+	buf.data = 0;
+	
+	WexprExpressionType type = wexpr_Expression_type(self);
+	
+	#define BUFCAST(buf, position, type) ((type)(buf+(position)))
+	
+	if (type == WexprExpressionTypeNull)
+	{
+		// data is 0x0
+		buf.byteSize = sizeof(uint32_t) + sizeof(uint8_t);
+		buf.data = realloc(buf.data, buf.byteSize);
+		*BUFCAST (buf.data, 0, uint32_t*) = wexpr_uint32ToBig(0);
+		*BUFCAST (buf.data, 4, uint8_t*) = 0x00;
+	}
+	
+	else if (type == WexprExpressionTypeValue)
+	{
+		const char* val = wexpr_Expression_value(self);
+		size_t valLength = strlen(val);
+		
+		buf.byteSize = sizeof(uint32_t) + sizeof(uint8_t) + valLength;
+		buf.data = realloc(buf.data, buf.byteSize);
+		*BUFCAST (buf.data, 0, uint32_t*) = wexpr_uint32ToBig(valLength);
+		*BUFCAST (buf.data, 4, uint8_t*) = 0x01;
+		memcpy (buf.data + 5, val, valLength);
+	}
+	
+	else if (type == WexprExpressionTypeArray)
+	{
+		// just the header for now
+		buf.byteSize = sizeof(uint32_t) + sizeof(uint8_t);
+		buf.data = realloc(buf.data, buf.byteSize);
+		*BUFCAST (buf.data, 4, uint8_t*) = 0x02; // write the array buffer
+		
+		size_t len = wexpr_Expression_arrayCount(self);
+		size_t curPos = 5;
+		for (size_t i=0; i < len; ++i)
+		{
+			WexprMutableBuffer childBuffer = wexpr_Expression_createBinaryRepresentation(
+				wexpr_Expression_arrayAt(self, i)
+			);
+			
+			buf.byteSize += childBuffer.byteSize;
+			buf.data = realloc(buf.data, buf.byteSize);
+			memcpy (buf.data + curPos, childBuffer.data, childBuffer.byteSize);
+			
+			free (childBuffer.data);
+			curPos += childBuffer.byteSize;
+		}
+		
+		// set total length - remove our bytesize and data from it
+		*BUFCAST (buf.data, 0, uint32_t*) = wexpr_uint32ToBig(curPos-5);
+	}
+	
+	else if (type == WexprExpressionTypeMap)
+	{
+		// key value pairs
+		buf.byteSize = sizeof(uint32_t) + sizeof(uint8_t);
+		buf.data = realloc(buf.data, buf.byteSize);
+		*BUFCAST (buf.data, 4, uint8_t*) = 0x03; // write the map buffer
+		
+		size_t len = wexpr_Expression_mapCount(self);
+		size_t curPos = 5;
+		for (size_t i=0; i < len; ++i)
+		{
+			const char* mapKey = wexpr_Expression_mapKeyAt(self, i);
+			size_t mapKeyLen = strlen(mapKey);
+			WexprExpression* mapValue = wexpr_Expression_mapValueAt(self, i);
+			
+			// write the map key as a new value
+			size_t newSize = sizeof(uint32_t) + sizeof(uint8_t) + mapKeyLen;
+			buf.byteSize += newSize;
+			buf.data = realloc(buf.data, buf.byteSize);
+			*BUFCAST (buf.data, curPos, uint32_t*) = wexpr_uint32ToBig(mapKeyLen);
+			*BUFCAST (buf.data, curPos + 4, uint8_t*) = 0x01;
+			memcpy (buf.data + curPos + 5, mapKey, mapKeyLen);
+		
+			curPos += newSize;
+			
+			// write the map value
+			WexprMutableBuffer childBuffer = wexpr_Expression_createBinaryRepresentation(
+				mapValue
+			);
+			
+			buf.byteSize += childBuffer.byteSize;
+			buf.data = realloc(buf.data, buf.byteSize);
+			memcpy (buf.data + curPos, childBuffer.data, childBuffer.byteSize);
+			
+			free (childBuffer.data);
+			curPos += childBuffer.byteSize;
+		}
+		
+		// set total length : remove our type and size from it
+		*BUFCAST (buf.data, 0, uint32_t*) = wexpr_uint32ToBig(curPos-5);
+	}
+	
+	else if (type == WexprExpressionTypeBinaryData)
+	{
+		const void* data = wexpr_Expression_binaryData_data(self);
+		size_t dataSize = wexpr_Expression_binaryData_size(self);
+		
+		buf.byteSize = sizeof(uint32_t) + sizeof(uint8_t) + sizeof(uint8_t) + dataSize;
+		buf.data = realloc(buf.data, buf.byteSize);
+		*BUFCAST (buf.data, 0, uint32_t*) = wexpr_uint32ToBig(dataSize+1); // 1 byte for the compression method
+		*BUFCAST (buf.data, 4, uint8_t*) = 0x04;
+		*BUFCAST (buf.data, 5, uint8_t*) = 0x00; // for now, only raw (no compression)
+		memcpy (buf.data + 6, data, dataSize);
+	}
+	
+	#undef BUFCAST
+
 	return buf;
 }
 

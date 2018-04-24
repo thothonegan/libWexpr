@@ -21,14 +21,14 @@ if commandToRun == "" or ! commandToRun.include? "{}"
 	exit 1
 end
 
-Dir["#{scriptDir}/success/*.wexpr"].each do |file|
+Dir["#{scriptDir}/*-success/*.*wexpr"].each do |file|
 	tests << {
 		fileName: file,
 		shouldBeCorrect: true
 	}
 end
 
-Dir["#{scriptDir}/fail/*.wexpr"].each do |file|
+Dir["#{scriptDir}/*-fail/*.wexpr"].each do |file|
 	tests << {
 		fileName: file,
 		shouldBeCorrect: false

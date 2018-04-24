@@ -33,6 +33,7 @@
 #include <libWexpr/libWexpr.h>
 
 #include <cstdlib>
+#include <cstring>
 #include <fstream>
 #include <iostream>
 
@@ -72,6 +73,48 @@ namespace
 			file << str << std::flush;
 		}
 	}
+	
+	void s_writeAllOutputWithFileHeaderTo (const std::string& outputPath, void* buffer, size_t bufferSize)
+	{
+		std::fstream* f = nullptr;
+		std::ostream* stream = &(std::cout);
+		
+		if (outputPath != "-")
+		{
+			f = new std::fstream(outputPath, std::ios::out | std::ios::binary);
+			stream = f;
+		}
+		
+		std::ostream& s = *stream; // the stream to write to
+		
+		// TODO: Move writing header to libWexpr since its part of the file format.
+		
+		// write header
+		uint8_t header [20];
+		memset (header, '\0', sizeof(header));
+		header[0] = 0x83;
+		header[1] = 'B'; header[2] = 'W'; header [3] = 'E' ; header[4] = 'X' ; header[5] = 'P'; header[6] = 'R';
+		header[7] = 0x0A;
+		
+		*reinterpret_cast<uint32_t*>(header+8) = wexpr_uint32ToBig(0x00000001);
+		
+		// reserved is 0
+		
+		s.write (reinterpret_cast<const char*>(header), sizeof(header));
+		
+		// currently we have no aux chunks
+		
+		// write main chunk
+		s.write(static_cast<const char*>(buffer), static_cast<std::streamsize>(bufferSize));
+		
+		// flush to the stream
+		s.flush();
+		
+		if (f)
+		{
+			delete f;
+		}
+	}
 }
 
 //
@@ -96,7 +139,9 @@ int main (int argc, char** argv)
 	
 	// normal flow
 	if (results.command == CommandLineParser::Command::HumanReadable ||
-		results.command == CommandLineParser::Command::Validate
+		results.command == CommandLineParser::Command::Validate ||
+		results.command == CommandLineParser::Command::Mini ||
+		results.command == CommandLineParser::Command::Binary
 	)
 	{
 		bool isValidate = (results.command == CommandLineParser::Command::Validate);
@@ -105,11 +150,103 @@ int main (int argc, char** argv)
 		
 		WexprError err = WEXPR_ERROR_INIT();
 		
-		auto expr = wexpr_Expression_createFromLengthString (
-			inputStr.c_str(), inputStr.size(),
-			WexprParseFlagNone,
-			&err
-		);
+		// determine if binary or not.
+		// if so, strip the header and do the chunk.
+		WexprExpression* expr = NULL;
+		
+		do { // so we can break back to here
+		
+			if (inputStr.size() >= 1 && static_cast<unsigned char>(inputStr[0]) == 0x83)
+			{
+				if (inputStr.size() < 20)
+				{
+					err.code = WexprErrorCodeBinaryInvalidHeader;
+					err.column = 0;
+					err.line = 0;
+					err.message = strdup("Invalid binary header - not big enough");
+					break;
+				}
+				
+				uint8_t magic [8] = {
+					0x83, 'B', 'W', 'E', 'X', 'P', 'R', 0x0A
+				};
+				
+				if (memcmp(inputStr.data(), magic, sizeof(magic)) != 0)
+				{
+					err.code = WexprErrorCodeBinaryInvalidHeader;
+					err.column = 0;
+					err.line = 0;
+					err.message = strdup("Invalid binary header - invalid magic");
+					break;
+				}
+				
+				if (*reinterpret_cast<const uint32_t*>(inputStr.data() + 8) != wexpr_uint32ToBig(0x01))
+				{
+					err.code = WexprErrorCodeBinaryUnknownVersion;
+					err.column = 0;
+					err.line = 0;
+					err.message = strdup("Invalid binary header - unknown version");
+					break;
+				}
+				
+				// make sure reserved is blank
+				uint8_t reserved [8] = {};
+				if (memcmp(inputStr.data() + 12, reserved, 8) != 0)
+				{
+					err.code = WexprErrorCodeBinaryInvalidHeader;
+					err.column = 0;
+					err.line = 0;
+					err.message = strdup("Invalid binary header - unknown reserved bits");
+					break;
+				}
+				
+				// header seems valid, skip it
+				const uint8_t* data = reinterpret_cast<const uint8_t*> (inputStr.data());
+				size_t curPos = 20;
+				size_t endPos = inputStr.size();
+				
+				while (curPos < endPos)
+				{
+					// read the size and type
+					size_t size = wexpr_bigUInt32ToNative(
+						*reinterpret_cast<const uint32_t*> (
+							data + curPos
+						)
+					);
+					uint8_t type = data[curPos + sizeof(uint32_t)];
+					if (type >= 0x00 && type <= 0x04)
+					{
+						// cool, parse it
+						if (expr)
+						{
+							err.code = WexprErrorCodeBinaryMultipleExpressions;
+							err.column = 0;
+							err.line = 0;
+							err.message = strdup("Found multiple expression chunks");
+							break;
+						}
+						
+						expr = wexpr_Expression_createFromBinaryChunk(
+							data + curPos, size + sizeof(uint32_t) + sizeof(uint8_t),
+							&err
+						);
+					}
+					
+					// move forward
+					curPos += sizeof(uint32_t) + sizeof(uint8_t);
+					curPos += size;
+				}
+			}
+			else
+			{
+				// assume string
+				expr = wexpr_Expression_createFromLengthString (
+					inputStr.c_str(), inputStr.size(),
+					WexprParseFlagNone,
+					&err
+				);
+			}
+		} while (0);
 		
 		if (err.code)
 		{
@@ -130,13 +267,28 @@ int main (int argc, char** argv)
 			}
 		}
 		
+		if (!expr)
+		{
+			if (isValidate)
+			{
+				s_writeAllOutputTo(results.outputPath, "false\n");
+			}
+			else
+			{
+				std::cerr << "WexprTool: Got an empty expression back" << std::endl;
+			}
+			
+			return EXIT_FAILURE;
+		}
+		
 		WEXPR_ERROR_FREE (err);
 		
 		if (isValidate)
 		{
 			s_writeAllOutputTo(results.outputPath, "true\n");
 		}
-		else
+		
+		else if (results.command == CommandLineParser::Command::HumanReadable)
 		{
 			char* buffer = wexpr_Expression_createStringRepresentation (
 				expr, 0, WexprWriteFlagHumanReadable
@@ -144,6 +296,27 @@ int main (int argc, char** argv)
 				
 				s_writeAllOutputTo(results.outputPath, std::string(buffer));
 			free (buffer);
+		}
+		
+		else if (results.command == CommandLineParser::Command::Mini)
+		{
+			char* buffer = wexpr_Expression_createStringRepresentation (
+				expr, 0, WexprWriteFlagNone
+			);
+				
+				s_writeAllOutputTo(results.outputPath, std::string(buffer));
+			free (buffer);
+		}
+		
+		else if (results.command == CommandLineParser::Command::Binary)
+		{
+			WexprMutableBuffer binDataInfo = wexpr_Expression_createBinaryRepresentation (
+				expr
+			);
+			
+			s_writeAllOutputWithFileHeaderTo(results.outputPath, binDataInfo.data, binDataInfo.byteSize);
+			
+			free (binDataInfo.data);
 		}
 
 		wexpr_Expression_destroy (expr);

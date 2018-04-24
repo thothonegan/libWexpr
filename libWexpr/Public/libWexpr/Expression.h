@@ -59,6 +59,26 @@ LIBWEXPR_EXTERN_C_BEGIN()
 //
 typedef struct WexprExpression WexprExpression;
 
+//
+/// \brief A buffer containing a piece of memory (writeable).
+/// Refer to the specific usage about ownership or not
+//
+typedef struct WexprMutableBuffer
+{
+	void* data;
+	size_t byteSize;
+} WexprMutableBuffer;
+
+//
+/// \brief A buffer containing a piece of memory (readonly).
+/// Refer to the specific usage about ownership or not
+//
+typedef struct WexprBuffer
+{
+	const void* data;
+	size_t byteSize;
+} WexprBuffer;
+
 /// \name Construction/Destruction
 /// \{
 
@@ -85,6 +105,17 @@ WexprExpression* wexpr_Expression_createFromString (
 WexprExpression* wexpr_Expression_createFromLengthString (
 	const char* str, size_t length, WexprParseFlags flags,
 	WexprError* error
+);
+
+//
+/// \brief Creates an expression from a binary chunk. You own and must destroy.
+/// \param data The data
+/// \param length The length of the data
+/// \param error Error information if any occurs.
+/// \return The created expression, or nullptr if none/error occurred.
+//
+WexprExpression* wexpr_Expression_createFromBinaryChunk (
+	const void* data, size_t length, WexprError* error
 );
 
 //
@@ -143,6 +174,12 @@ void wexpr_Expression_changeType (WexprExpression* self, WexprExpressionType typ
 /// \param indent The starting indent level, generally 0. Will use tabs to indent.
 //
 char* wexpr_Expression_createStringRepresentation (WexprExpression* self, size_t indent, WexprWriteFlags flags);
+
+//
+/// \brief Create binary data which represents the expression. This contains of an expression chunk and all of its child chunks, but NOT the file header. Owned by you, must be destroyed with free.
+/// Will return a null buffer on errors.
+//
+WexprMutableBuffer wexpr_Expression_createBinaryRepresentation (WexprExpression* self);
 
 /// \}
 
