@@ -182,7 +182,7 @@ size_t wexpr_Expression_binaryData_size (WexprExpression* self);
 //
 /// \brief Set the binary data to use. Will copy it in.
 //
-void wexpr_Expression_binaryData_setValue (WexprExpression* self, void* buffer, size_t byteSize);
+void wexpr_Expression_binaryData_setValue (WexprExpression* self, const void* buffer, size_t byteSize);
 
 /// \}
 

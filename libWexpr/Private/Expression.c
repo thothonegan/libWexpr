@@ -1654,7 +1654,7 @@ size_t wexpr_Expression_binaryData_size (WexprExpression* self)
 	return self->m_binaryData.size;
 }
 
-void wexpr_Expression_binaryData_setValue (WexprExpression* self, void* buffer, size_t byteSize)
+void wexpr_Expression_binaryData_setValue (WexprExpression* self, const void* buffer, size_t byteSize)
 {
 	if (self->m_type != WexprExpressionTypeBinaryData)
 		return;
