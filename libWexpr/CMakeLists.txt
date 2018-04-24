@@ -8,6 +8,7 @@ project (libWexpr)
 	set (libWexpr_HEADERS
 		${libWexpr_SOURCE_DIR}/Public/libWexpr/libWexpr.h
 
+		${libWexpr_SOURCE_DIR}/Public/libWexpr/Endian.h
 		${libWexpr_SOURCE_DIR}/Public/libWexpr/Error.h
 		${libWexpr_SOURCE_DIR}/Public/libWexpr/Expression.h
 		${libWexpr_SOURCE_DIR}/Public/libWexpr/ExpressionType.h

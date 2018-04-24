@@ -31,6 +31,7 @@
 #ifndef LIBWEXPR_LIBWEXPR_H
 #define LIBWEXPR_LIBWEXPR_H
 
+#include "Endian.h"
 #include "Error.h"
 #include "Expression.h"
 #include "ExpressionType.h"

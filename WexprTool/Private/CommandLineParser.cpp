@@ -40,6 +40,10 @@ namespace
 			return CommandLineParser::Command::HumanReadable;
 		else if (str == "validate")
 			return CommandLineParser::Command::Validate;
+		else if (str == "mini")
+			return CommandLineParser::Command::Mini;
+		else if (str == "binary")
+			return CommandLineParser::Command::Binary;
 		
 		return CommandLineParser::Command::Unknown;
 	}
@@ -96,7 +100,11 @@ void CommandLineParser::displayHelp(int argc, char** argv)
 	cout << "-c, --cmd     Perform the requested command" << std::endl;
 	cout << "              humanReadable - [default] Makes the wexpr input human readable and outputs." << std::endl;
 	cout << "              validate      - Checks the wexpr. If valid outputs 'true' and returns 0, otherwise 'false' and 1." << std::endl;
+	cout << "              mini          - Minifies the wexpr output" << std::endl;
+	cout << "              binary        - Write the wexpr out as binary" << std::endl;
 	cout << std::endl;
+	cout << "-i, --input   The input file to read from (default is -, stdin)." << std::endl;
+	cout << "-o, --output  The place to write the output (default is -, stdout)." << std::endl;
 	cout << "-h, --help    Display this help and exit" << std::endl;
 	cout << "-v, --version Output the version and exit" << std::endl;
 }
