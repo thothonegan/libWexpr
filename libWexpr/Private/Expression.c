@@ -680,7 +680,7 @@ static WexprBuffer s_Expression_parseFromBinaryChunk (WexprExpression* self, Wex
 	
 	const void* buf = data.data;
 	
-	#define BUFCAST(buf, position, type) ((type)(buf+(position)))
+	#define BUFCAST(buf, position, type) ((type)((uint8_t*)buf+(position)))
 	
 	uint32_t size = wexpr_bigUInt32ToNative(*BUFCAST(buf, 0, uint32_t*));
 	uint8_t chunkType = *BUFCAST(buf, 4, uint8_t*);
@@ -691,7 +691,7 @@ static WexprBuffer s_Expression_parseFromBinaryChunk (WexprExpression* self, Wex
 		{ \
 			WexprBuffer rest; \
 			rest.byteSize = data.byteSize - readAmount; \
-			rest.data = buf + readAmount; \
+			rest.data = (uint8_t*)buf + readAmount; \
 			return rest; \
 		} while (0)
 		
@@ -1875,7 +1875,7 @@ WexprMutableBuffer wexpr_Expression_createBinaryRepresentation (WexprExpression*
 	
 	WexprExpressionType type = wexpr_Expression_type(self);
 	
-	#define BUFCAST(buf, position, type) ((type)(buf+(position)))
+	#define BUFCAST(buf, position, type) ((type)((uint8_t*)buf+(position)))
 	
 	if (type == WexprExpressionTypeNull)
 	{
@@ -1895,7 +1895,7 @@ WexprMutableBuffer wexpr_Expression_createBinaryRepresentation (WexprExpression*
 		buf.data = realloc(buf.data, buf.byteSize);
 		*BUFCAST (buf.data, 0, uint32_t*) = wexpr_uint32ToBig(valLength);
 		*BUFCAST (buf.data, 4, uint8_t*) = 0x01;
-		memcpy (buf.data + 5, val, valLength);
+		memcpy ((uint8_t*)buf.data + 5, val, valLength);
 	}
 	
 	else if (type == WexprExpressionTypeArray)
@@ -1915,7 +1915,7 @@ WexprMutableBuffer wexpr_Expression_createBinaryRepresentation (WexprExpression*
 			
 			buf.byteSize += childBuffer.byteSize;
 			buf.data = realloc(buf.data, buf.byteSize);
-			memcpy (buf.data + curPos, childBuffer.data, childBuffer.byteSize);
+			memcpy ((uint8_t*)buf.data + curPos, childBuffer.data, childBuffer.byteSize);
 			
 			free (childBuffer.data);
 			curPos += childBuffer.byteSize;
@@ -1946,7 +1946,7 @@ WexprMutableBuffer wexpr_Expression_createBinaryRepresentation (WexprExpression*
 			buf.data = realloc(buf.data, buf.byteSize);
 			*BUFCAST (buf.data, curPos, uint32_t*) = wexpr_uint32ToBig(mapKeyLen);
 			*BUFCAST (buf.data, curPos + 4, uint8_t*) = 0x01;
-			memcpy (buf.data + curPos + 5, mapKey, mapKeyLen);
+			memcpy ((uint8_t*)buf.data + curPos + 5, mapKey, mapKeyLen);
 		
 			curPos += newSize;
 			
@@ -1957,7 +1957,7 @@ WexprMutableBuffer wexpr_Expression_createBinaryRepresentation (WexprExpression*
 			
 			buf.byteSize += childBuffer.byteSize;
 			buf.data = realloc(buf.data, buf.byteSize);
-			memcpy (buf.data + curPos, childBuffer.data, childBuffer.byteSize);
+			memcpy ((uint8_t*)buf.data + curPos, childBuffer.data, childBuffer.byteSize);
 			
 			free (childBuffer.data);
 			curPos += childBuffer.byteSize;
@@ -1977,7 +1977,7 @@ WexprMutableBuffer wexpr_Expression_createBinaryRepresentation (WexprExpression*
 		*BUFCAST (buf.data, 0, uint32_t*) = wexpr_uint32ToBig(dataSize+1); // 1 byte for the compression method
 		*BUFCAST (buf.data, 4, uint8_t*) = 0x04;
 		*BUFCAST (buf.data, 5, uint8_t*) = 0x00; // for now, only raw (no compression)
-		memcpy (buf.data + 6, data, dataSize);
+		memcpy ((uint8_t*)buf.data + 6, data, dataSize);
 	}
 	
 	#undef BUFCAST

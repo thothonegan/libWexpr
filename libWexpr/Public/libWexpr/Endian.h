@@ -47,6 +47,11 @@
 #else
 	#define WEXPR_REINTERP_CAST(Type, val) ((Type)val)
 #endif
+
+#ifdef _MSC_VER
+	#include <stdlib.h>
+#endif
+
 //
 /// \brief Swap a uint16 bytes
 //

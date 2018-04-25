@@ -140,7 +140,7 @@ Base64Buffer base64_decode (Base64IBuffer buf)
 			for (size_t i=0; i < 4 ; ++i)
 				outputBuffer[i] = s_indexOfBase64Character (outputBuffer[i]);
 			
-			s_base64DecodeAndAppend(res.buffer + outPos, outputBuffer, 3);
+			s_base64DecodeAndAppend((uint8_t*)res.buffer + outPos, outputBuffer, 3);
 			outPos += 3;
 			outBufferPos = 0;
 		}
@@ -155,7 +155,7 @@ Base64Buffer base64_decode (Base64IBuffer buf)
 		for (size_t i=0; i < 4 ; ++i)
 			outputBuffer[i] = s_indexOfBase64Character (outputBuffer[i]);
 		
-		s_base64DecodeAndAppend(res.buffer + outPos, outputBuffer, outBufferPos-1);
+		s_base64DecodeAndAppend((uint8_t*)res.buffer + outPos, outputBuffer, outBufferPos-1);
 		outPos += outBufferPos-1;
 	}
 	
@@ -195,7 +195,7 @@ Base64Buffer base64_encode (Base64IBuffer buf)
 		if (curInInputBytes == 3)
 		{
 			// filled up - encode
-			s_base64EncodeAndAppend(res.buffer + curInOutput, inputBytes, 4);
+			s_base64EncodeAndAppend((uint8_t*)res.buffer + curInOutput, inputBytes, 4);
 			curInOutput += 4;
 			curInInputBytes = 0;
 		}
@@ -209,7 +209,7 @@ Base64Buffer base64_encode (Base64IBuffer buf)
 			inputBytes[j] = 0;
 		}
 		
-		s_base64EncodeAndAppend(res.buffer + curInOutput, inputBytes, curInInputBytes+1);
+		s_base64EncodeAndAppend((uint8_t*)res.buffer + curInOutput, inputBytes, curInInputBytes+1);
 		curInOutput += curInInputBytes+1;
 		
 		// append padding
