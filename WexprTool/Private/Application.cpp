@@ -152,7 +152,7 @@ int main (int argc, char** argv)
 		
 		// determine if binary or not.
 		// if so, strip the header and do the chunk.
-		WexprExpression* expr = NULL;
+		WexprExpression* expr = nullptr;
 		
 		do { // so we can break back to here
 		
@@ -214,7 +214,7 @@ int main (int argc, char** argv)
 						)
 					);
 					uint8_t type = data[curPos + sizeof(uint32_t)];
-					if (type >= 0x00 && type <= 0x04)
+					if (/*given: type >= 0x00 &&*/ type <= 0x04)
 					{
 						// cool, parse it
 						if (expr)
