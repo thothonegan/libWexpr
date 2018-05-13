@@ -195,7 +195,7 @@ Base64Buffer base64_encode (Base64IBuffer buf)
 		if (curInInputBytes == 3)
 		{
 			// filled up - encode
-			s_base64EncodeAndAppend((uint8_t*)res.buffer + curInOutput, inputBytes, 4);
+			s_base64EncodeAndAppend((char*)res.buffer + curInOutput, inputBytes, 4);
 			curInOutput += 4;
 			curInInputBytes = 0;
 		}
@@ -209,7 +209,7 @@ Base64Buffer base64_encode (Base64IBuffer buf)
 			inputBytes[j] = 0;
 		}
 		
-		s_base64EncodeAndAppend((uint8_t*)res.buffer + curInOutput, inputBytes, curInInputBytes+1);
+		s_base64EncodeAndAppend((char*)res.buffer + curInOutput, inputBytes, curInInputBytes+1);
 		curInOutput += curInInputBytes+1;
 		
 		// append padding
