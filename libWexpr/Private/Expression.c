@@ -1346,10 +1346,11 @@ static PrivateStringRef p_wexpr_Expression_appendStringRepresentationToAllocated
 	
 	if (type == WexprExpressionTypeNull)
 	{
-		char* newBuffer = realloc(buffer, 4);
+		size_t newSize = curBufferSize + 4;
+		char* newBuffer = realloc(buffer, newSize);
 		
 		strncpy (newBuffer+curBufferSize, "null", 4);
-		return s_stringRef_createFromPointerSize(newBuffer, 4);
+		return s_stringRef_createFromPointerSize(newBuffer, newSize);
 	}
 	
 	else if (type == WexprExpressionTypeValue)
