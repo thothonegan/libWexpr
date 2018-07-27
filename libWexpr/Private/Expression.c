@@ -1208,31 +1208,7 @@ static PrivateStringRef s_Expression_parseFromString (WexprExpression* self, Pri
 		return str;
 	}
 	
-	// null expressions
-	else if (
-		str.size >= 3 && s_StringRef_isEqual(
-			s_StringRef_slice2 (str, 0, 3), s_StringRef_create("nil")
-		)
-	)
-	{
-		self->m_type = WexprExpressionTypeNull;
-		parserState->column += 3;
-		
-		
-		return s_StringRef_slice (str, 3);
-	}
-	
-	else if (
-		str.size >= 4 && s_StringRef_isEqual(
-			s_StringRef_slice2 (str, 0, 4), s_StringRef_create("null")
-		)
-	)
-	{
-		self->m_type = WexprExpressionTypeNull;
-		parserState->column += 4;
-		
-		return s_StringRef_slice (str, 4);
-	}
+	// null expressions will be treated as a value, and then parsed seperately
 	
 	else if (
 		str.size >= 1 && s_StringRef_isEqual(
@@ -1286,8 +1262,20 @@ static PrivateStringRef s_Expression_parseFromString (WexprExpression* self, Pri
 		if (error && error->code != WexprErrorCodeNone)
 			return s_StringRef_createInvalid();
 		
-		self->m_type = WexprExpressionTypeValue;
-		self->m_value.data = val.value;
+		// was it a null/nil string?
+		if ((strcmp (val.value, "nil") == 0) || (strcmp (val.value, "null") == 0))
+		{
+			self->m_type = WexprExpressionTypeNull;
+			
+			// we dont need the value anymore, trash it
+			free(val.value);
+			val.value = LIBWEXPR_NULLPTR;
+		}
+		else
+		{
+			self->m_type = WexprExpressionTypeValue;
+			self->m_value.data = val.value;
+		}
 		
 		s_privateParserState_moveForwardBasedOnString (parserState,
 			s_StringRef_slice2(
