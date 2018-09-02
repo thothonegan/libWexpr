@@ -44,9 +44,9 @@
 
 LIBWEXPR_EXTERN_C_BEGIN()
 
-int wexpr_Version_major ();
-int wexpr_Version_minor ();
-int wexpr_Version_patch ();
+LIBWEXPR_PUBLIC int wexpr_Version_major ();
+LIBWEXPR_PUBLIC int wexpr_Version_minor ();
+LIBWEXPR_PUBLIC int wexpr_Version_patch ();
 
 LIBWEXPR_EXTERN_C_END()
 

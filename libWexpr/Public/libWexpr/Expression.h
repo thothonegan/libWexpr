@@ -89,7 +89,7 @@ typedef struct WexprBuffer
 /// \param error Will store error information if any occurs.
 /// \return The created expression, or nullptr if none/error occurred.
 //
-WexprExpression* wexpr_Expression_createFromString (
+LIBWEXPR_PUBLIC WexprExpression* wexpr_Expression_createFromString (
 	const char* str, WexprParseFlags flags,
 	WexprError* error
 );
@@ -102,7 +102,7 @@ WexprExpression* wexpr_Expression_createFromString (
 /// \param error Will store error information if any occurs.
 /// \return The created expression, or nullptr if none/error occurred.
 //
-WexprExpression* wexpr_Expression_createFromLengthString (
+LIBWEXPR_PUBLIC WexprExpression* wexpr_Expression_createFromLengthString (
 	const char* str, size_t length, WexprParseFlags flags,
 	WexprError* error
 );
@@ -114,7 +114,7 @@ WexprExpression* wexpr_Expression_createFromLengthString (
 /// \param error Error information if any occurs.
 /// \return The created expression, or nullptr if none/error occurred.
 //
-WexprExpression* wexpr_Expression_createFromBinaryChunk (
+LIBWEXPR_PUBLIC WexprExpression* wexpr_Expression_createFromBinaryChunk (
 	const void* data, size_t length, WexprError* error
 );
 
@@ -122,35 +122,35 @@ WexprExpression* wexpr_Expression_createFromBinaryChunk (
 /// \brief Creates an empty invalid expression. You own and must destroy.
 /// \return A newly created invalid expression, or null if it fails.
 //
-WexprExpression* wexpr_Expression_createInvalid (void);
+LIBWEXPR_PUBLIC WexprExpression* wexpr_Expression_createInvalid (void);
 
 //
 /// \brief Creates an empty null expression. You own and must destroy.
 /// \return A newly created null expression, or null if it fails.
 //
-WexprExpression* wexpr_Expression_createNull (void);
+LIBWEXPR_PUBLIC WexprExpression* wexpr_Expression_createNull (void);
 
 //
 /// \brief Create a value expression with the given string being the value.
 /// \return a newly created value expression, or null if it fails.
 //
-WexprExpression* wexpr_Expression_createValue (const char* val);
+LIBWEXPR_PUBLIC WexprExpression* wexpr_Expression_createValue (const char* val);
 
 //
 /// \brief Create a value expression from a length string.
 //
-WexprExpression* wexpr_Expression_createValueFromLengthString (const char* val, size_t length);
+LIBWEXPR_PUBLIC WexprExpression* wexpr_Expression_createValueFromLengthString (const char* val, size_t length);
 
 //
 /// \brief Create a copy of an expression. You own the copy - deep copy.
 //
-WexprExpression* wexpr_Expression_createCopy (WexprExpression* rhs);
+LIBWEXPR_PUBLIC WexprExpression* wexpr_Expression_createCopy (WexprExpression* rhs);
 
 //
 /// \brief Destroy an expression that was created by a create* function.
 /// \param self The expression to destroy
 //
-void wexpr_Expression_destroy (WexprExpression* self);
+LIBWEXPR_PUBLIC void wexpr_Expression_destroy (WexprExpression* self);
 
 /// \}
 
@@ -162,24 +162,24 @@ void wexpr_Expression_destroy (WexprExpression* self);
 /// \param self The expression to get the type of
 /// \return The type of the expression.
 //
-WexprExpressionType wexpr_Expression_type (WexprExpression* self);
+LIBWEXPR_PUBLIC WexprExpressionType wexpr_Expression_type (WexprExpression* self);
 
 //
 /// \brief Change the type of the expression. Invalidates all data currently in the expression.
 //
-void wexpr_Expression_changeType (WexprExpression* self, WexprExpressionType type);
+LIBWEXPR_PUBLIC void wexpr_Expression_changeType (WexprExpression* self, WexprExpressionType type);
 
 //
 /// \brief Create a string which represents the expression. Owned by you, must be destroyed with free.
 /// \param indent The starting indent level, generally 0. Will use tabs to indent.
 //
-char* wexpr_Expression_createStringRepresentation (WexprExpression* self, size_t indent, WexprWriteFlags flags);
+LIBWEXPR_PUBLIC char* wexpr_Expression_createStringRepresentation (WexprExpression* self, size_t indent, WexprWriteFlags flags);
 
 //
 /// \brief Create binary data which represents the expression. This contains of an expression chunk and all of its child chunks, but NOT the file header. Owned by you, must be destroyed with free.
 /// Will return a null buffer on errors.
 //
-WexprMutableBuffer wexpr_Expression_createBinaryRepresentation (WexprExpression* self);
+LIBWEXPR_PUBLIC WexprMutableBuffer wexpr_Expression_createBinaryRepresentation (WexprExpression* self);
 
 /// \}
 
@@ -189,17 +189,17 @@ WexprMutableBuffer wexpr_Expression_createBinaryRepresentation (WexprExpression*
 //
 /// \brief Return the value of the expression. Will return null if not a value.
 //
-const char* wexpr_Expression_value (WexprExpression* self);
+LIBWEXPR_PUBLIC const char* wexpr_Expression_value (WexprExpression* self);
 
 //
 /// \brief Set the value of the expression.
 //
-void wexpr_Expression_valueSet (WexprExpression* self, const char* str);
+LIBWEXPR_PUBLIC void wexpr_Expression_valueSet (WexprExpression* self, const char* str);
 
 //
 /// \brief Set the value of the expression using a string with a length.
 //
-void wexpr_Expression_valueSetLengthString (WexprExpression* self, const char* str, size_t length);
+LIBWEXPR_PUBLIC void wexpr_Expression_valueSetLengthString (WexprExpression* self, const char* str, size_t length);
 
 /// \}
 
@@ -209,17 +209,17 @@ void wexpr_Expression_valueSetLengthString (WexprExpression* self, const char* s
 //
 /// \brief Return the data of the expression. Will return null if not a binary data.
 //
-const void* wexpr_Expression_binaryData_data (WexprExpression* self);
+LIBWEXPR_PUBLIC const void* wexpr_Expression_binaryData_data (WexprExpression* self);
 
 //
 /// \brief Return the buffer size of the expression. Will return 0 if not binary data.
 //
-size_t wexpr_Expression_binaryData_size (WexprExpression* self);
+LIBWEXPR_PUBLIC size_t wexpr_Expression_binaryData_size (WexprExpression* self);
 
 //
 /// \brief Set the binary data to use. Will copy it in.
 //
-void wexpr_Expression_binaryData_setValue (WexprExpression* self, const void* buffer, size_t byteSize);
+LIBWEXPR_PUBLIC void wexpr_Expression_binaryData_setValue (WexprExpression* self, const void* buffer, size_t byteSize);
 
 /// \}
 
@@ -229,19 +229,19 @@ void wexpr_Expression_binaryData_setValue (WexprExpression* self, const void* bu
 //
 /// \brief Return the number of expressions in the array. Returns 0 if not an array.
 //
-size_t wexpr_Expression_arrayCount (WexprExpression* self);
+LIBWEXPR_PUBLIC size_t wexpr_Expression_arrayCount (WexprExpression* self);
 
 //
 /// \brief Return the expression at the given index. [0 .. arrayCount-1]
 /// \return The expression or NULL if invalid.
 //
-WexprExpression* wexpr_Expression_arrayAt (WexprExpression* self, size_t index);
+LIBWEXPR_PUBLIC WexprExpression* wexpr_Expression_arrayAt (WexprExpression* self, size_t index);
 
 //
 /// \brief Add an element to the end of the array.
 /// \param element The element to add. You MUST own, and we'll take ownership from you. Use wexpr_Expression_createCopy() if you need to add an un-owned pointer.
 //
-void wexpr_Expression_arrayAddElementToEnd (WexprExpression* self, WexprExpression* element);
+LIBWEXPR_PUBLIC void wexpr_Expression_arrayAddElementToEnd (WexprExpression* self, WexprExpression* element);
 
 /// \}
 
@@ -251,41 +251,41 @@ void wexpr_Expression_arrayAddElementToEnd (WexprExpression* self, WexprExpressi
 //
 /// \brief Return the number of key-value pairs in the map. Returns 0 if not a map.
 //
-size_t wexpr_Expression_mapCount (WexprExpression* self);
+LIBWEXPR_PUBLIC size_t wexpr_Expression_mapCount (WexprExpression* self);
 
 //
 /// \brief Return the key at a given index within the map.
 //
-const char* wexpr_Expression_mapKeyAt (WexprExpression* self, size_t index);
+LIBWEXPR_PUBLIC const char* wexpr_Expression_mapKeyAt (WexprExpression* self, size_t index);
 
 //
 /// \brief Return the value at a given index within the map.
 //
-WexprExpression* wexpr_Expression_mapValueAt (WexprExpression* self, size_t index);
+LIBWEXPR_PUBLIC WexprExpression* wexpr_Expression_mapValueAt (WexprExpression* self, size_t index);
 
 //
 /// \brief Return the value for a given key within the map, or NULL if not found.
 //
-WexprExpression* wexpr_Expression_mapValueForKey (WexprExpression* self, const char* key);
+LIBWEXPR_PUBLIC WexprExpression* wexpr_Expression_mapValueForKey (WexprExpression* self, const char* key);
 
 //
 /// \brief Return the value for a given key (w/length) within the map, or NULL if not found.
 //
-WexprExpression* wexpr_Expression_mapValueForLengthKey (WexprExpression* self, const char* key, size_t length);
+LIBWEXPR_PUBLIC WexprExpression* wexpr_Expression_mapValueForLengthKey (WexprExpression* self, const char* key, size_t length);
 
 //
 /// \brief Set the value for a given key in the map
 /// \param key The key to assign the value to.
 /// \param value The value to use. You MUST own, and we'll take ownership from you.
 //
-void wexpr_Expression_mapSetValueForKey (WexprExpression* self, const char* key, WexprExpression* value);
+LIBWEXPR_PUBLIC void wexpr_Expression_mapSetValueForKey (WexprExpression* self, const char* key, WexprExpression* value);
 
 //
 /// \brief Set the value for a given key (lengthstr) in the map
 /// \param key The key to assign the value to.
 /// \param value The value to use. You MUST own, and we'll take ownership from you.
 //
-void wexpr_Expression_mapSetValueForKeyLengthString (WexprExpression* self, const char* key, size_t length, WexprExpression* value);
+LIBWEXPR_PUBLIC void wexpr_Expression_mapSetValueForKeyLengthString (WexprExpression* self, const char* key, size_t length, WexprExpression* value);
 
 /// \}
 

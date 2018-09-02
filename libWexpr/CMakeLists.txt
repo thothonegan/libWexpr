@@ -34,11 +34,20 @@ project (libWexpr)
 	)
 
 	# MSVC gets annoyed with our POSIX functions
+	# we duplicate some catalyst macros just in case you're not using catalyst
 	set (libWexpr_DEFINES
 		_CRT_NONSTDC_NO_DEPRECATE=1
 		_CRT_SECURE_NO_WARNINGS=1
+		
+		# similar to catalyst macros
+		CATALYST_libWexpr_IS_BUILDING=1
 	)
 
+	set (libWexpr_SHAREDLIB_DEFINES
+		# similar to catalyst macros
+		CATALYST_libWexprIS_SHARED_LIBRARY=1
+	)
+	
 	# if building for catalyst, build it as a module
 	if (CATALYST_INSTALL_PREFIX)
 
@@ -49,6 +58,11 @@ project (libWexpr)
 			catalyst_append_target_property (libWexpr COMPILE_DEFINITIONS
 				${libWexpr_DEFINES}
 			)
+			
+			catalyst_module_append_target_property_shared (libWexpr COMPILE_DEFINITIONS
+				${libWexpr_SHAREDLIB_DEFINES}
+			)
+			
 		catalyst_end_module (libWexpr Modules/)
 
 		catalyst_install_target (libWexpr Modules/)

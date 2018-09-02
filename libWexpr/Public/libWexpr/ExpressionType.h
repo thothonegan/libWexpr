@@ -60,7 +60,7 @@ enum
 /// \brief Return an expressiontype as a string
 /// Will return "Null", "Value", "Map", "Array", etc as needed. Returns NULL if no entry found.
 //
-const char* wexpr_ExpressionType_toString (WexprExpressionType self);
+LIBWEXPR_PUBLIC const char* wexpr_ExpressionType_toString (WexprExpressionType self);
 
 LIBWEXPR_EXTERN_C_END()
 

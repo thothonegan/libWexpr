@@ -46,4 +46,28 @@
 	#define LIBWEXPR_NULLPTR NULL
 #endif
 
+// similar to wolf macros
+#if defined(_WIN32)
+	#define LIBWEXPR_EXPORT __declspec(dllexport)
+	#define LIBWEXPR_IMPORT __declspec(dllimport)
+#elif defined(__GNUC__) || defined(__clang__)
+	#define LIBWEXPR_EXPORT __attribute__ ((visibility ("default") ))
+	#define LIBWEXPR_IMPORT
+#else // unknown/unneeded
+	#define LIBWEXPR_EXPORT
+	#define LIBWEXPR_IMPORT
+#endif
+
+// LIBWEXPR_PUBLIC will export/import as needed
+
+#if defined(CATALYST_libWexpr_IS_SHARED_LIBRARY)
+	#if defined(CATALYST_libWexpr_IS_BUILDING)
+		#define LIBWEXPR_PUBLIC LIBWEXPR_EXPORT
+	#else
+		#define LIBWEXPR_PUBLIC LIBWEXPR_IMPORT
+	#endif
+#else // not shared
+	#define LIBWEXPR_PUBLIC
+#endif
+
 #endif // LIBWEXPR_MACROS_H
