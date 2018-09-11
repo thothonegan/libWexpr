@@ -18,7 +18,7 @@
 				<DetectChar char="&quot;" context="String" attribute="styleString" />
 				
 				<StringDetect attribute="styleComment" context="CommentRegion" String=";(-" beginRegion="Comment" />
-				<RegExpr attribute="styleComment" context="CommentLine" String=";" beginRegion="Comment" />
+				<RegExpr attribute="styleComment" context="CommentLine" String=";"/>
 
 				<keyword String="Constants" attribute="styleConstant" context="#stay" />
 
