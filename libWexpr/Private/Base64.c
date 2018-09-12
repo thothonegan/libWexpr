@@ -120,10 +120,12 @@ Base64Buffer base64_decode (Base64IBuffer buf)
 	size_t outBufferPos = 0; // position in outputBuffer
 	size_t outPos = 0; // position in res.buffer
 	
-	while (lenRemaining--
+	while (lenRemaining > 0
 		&& ( bufBuf[inPos] != '=')
 	)
 	{
+		--lenRemaining; // handling one
+		
 		if (!s_isValidBase64Character (bufBuf[inPos]))
 		{
 			Base64Buffer r;
@@ -146,7 +148,7 @@ Base64Buffer base64_decode (Base64IBuffer buf)
 		}
 	}
 	
-	if (outPos != 0)
+	if (outBufferPos != 0)
 	{
 		for (size_t j=outBufferPos; j < 4; ++j)
 			outputBuffer[j] = 0; // empty the rest
