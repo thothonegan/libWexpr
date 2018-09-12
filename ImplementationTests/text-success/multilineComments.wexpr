@@ -1,0 +1,12 @@
+@(
+	;(-- This is the best color
+		Nobody has better colors then us
+	--)
+	a color
+
+	b #(
+	;;(-- This may look commented out
+	)
+	;--) but its really not
+)
+
