@@ -6,9 +6,15 @@ scriptDir = File.expand_path(File.dirname(__FILE__))
 
 commandToRun = ""
 displayOutput = false
+noBinary = false
 ARGV.each do|a|
 	if a == "--displayOutput"
 		displayOutput = true
+		next
+	end
+
+	if a == "--noBinary"
+		noBinary = true
 		next
 	end
 
@@ -21,18 +27,27 @@ if commandToRun == "" or ! commandToRun.include? "{}"
 	exit 1
 end
 
-Dir["#{scriptDir}/*-success/*.*wexpr"].each do |file|
+Dir["#{scriptDir}/text-success/*.*wexpr"].each do |file|
 	tests << {
 		fileName: file,
 		shouldBeCorrect: true
 	}
 end
 
-Dir["#{scriptDir}/*-fail/*.wexpr"].each do |file|
+Dir["#{scriptDir}/text-fail/*.wexpr"].each do |file|
 	tests << {
 		fileName: file,
 		shouldBeCorrect: false
 	}
+end
+
+if not noBinary
+	Dir["#{scriptDir}/binary-success/*.*wexpr"].each do |file|
+		tests << {
+			fileName: file,
+			shouldBeCorrect: true
+		}
+	end
 end
 
 pass=0
