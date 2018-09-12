@@ -274,8 +274,15 @@ static bool s_isWhitespace (char c)
 
 static bool s_isNotBarewordSafe (char c)
 {
-	return (c == '#' || c == '@' || c == '(' || c == ')' || c == ';'
+	return (c == '*'
+		|| c == '#'
+		|| c == '@'
+		|| c == '(' || c == ')'
 		|| c == '[' || c == ']'
+		|| c == '^'
+		|| c == '<' || c == '>'
+		|| c == '"'
+		|| c == ';'
 		|| s_isWhitespace(c)
 	);
 }

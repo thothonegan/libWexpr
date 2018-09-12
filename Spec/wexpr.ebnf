@@ -1,3 +1,4 @@
+/* use http://www.bottlecaps.de/rr/ui to generate */
 /* tokens */
 Expression ::= OptWS ActualExpression OptWS
 
@@ -9,7 +10,7 @@ Null ::= "null" | "nil"
 
 Value ::= BareValue | QuotedValue
 
-BareValue ::= "[^\*#@\(\);\[\]\^<>\r\n \t]+"
+BareValue ::= '[^\*\"#@\(\);\[\]\^<>\r\n \t]+'
 
 QuotedValue ::= '"' EscapableString '"'
 
