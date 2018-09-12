@@ -35,3 +35,5 @@ Related Repositories
 
 - Atom syntax - https://github.com/thothonegan/language-wexpr/
 - Lua implementation - https://github.com/tyraindreams/libWexpr.lua
+- Javascript implementation - https://github.com/tyraindreams/libWexpr.js
+
