@@ -1706,6 +1706,8 @@ WexprExpression* wexpr_Expression_createFromBinaryChunk (
 		expr, inBuf, &err
 	);
 	
+	(void) buf; // unused, remaining part of buffer
+	
 	if (err.code != WexprErrorCodeNone)
 	{
 		wexpr_Expression_destroy (expr);
