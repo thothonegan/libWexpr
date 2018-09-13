@@ -37,6 +37,7 @@ Related Repositories
 - Vim - https://github.com/thothonegan/wexpr-vim-syntax
 - Katepart (Kwrite/KDevelop) - See [Syntax](Syntax/)
 - Nano - See [Syntax](Syntax/)
+- Notepad++ - See [Syntax](Syntax/)
 
 - Lua implementation - https://github.com/tyraindreams/libWexpr.lua
 - Javascript implementation - https://github.com/tyraindreams/libWexpr.js
