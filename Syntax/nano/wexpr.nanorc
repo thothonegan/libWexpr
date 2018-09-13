@@ -1,0 +1,34 @@
+## Wexpr Highlighting
+#
+# Author Alexander Clay <tyraindreams@gmail.com>
+# Copyright 2018
+# License MIT
+
+syntax "wexpr" "\.wexpr$"
+
+# Barewords
+color magenta "([^<>"*#@\(\);\[\]]|[^[:blank:]])+"
+
+# Opening and closing scopes
+color yellow "#\(|@\(|\)"
+
+# Numbers
+color brightblue "-?[0-9]+(\.[0-9]+)?"
+
+# Binary
+color blue "<[a-zA-Z0-9\+\/=]+>"
+
+# Reference
+color brightcyan "\[[a-zA-Z_\w]+\]"
+color cyan "\*\[[a-zA-Z_\w]+\]"
+
+# Comments
+color green ";.*$"
+color green start="\(--" end="--\)"
+
+# Strings
+color red "L?\"([^\\\\\"]+|\\\\.|.)*\""
+color white,red "\".*\\[^nrt\\\"].*\""
+
+# Empty Lines
+color black,green "[[:space:]]+$"
