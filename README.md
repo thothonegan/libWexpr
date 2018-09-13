@@ -33,7 +33,10 @@ true ; and this - basically anything thats a single string or quoted
 Related Repositories
 --------------------
 
-- Atom syntax - https://github.com/thothonegan/language-wexpr/
+- Atom - https://github.com/thothonegan/language-wexpr/
+- Vim - https://github.com/thothonegan/wexpr-vim-syntax
+- Katepart (Kwrite/KDevelop) - See [Syntax](Syntax/)
+- Nano - See [Syntax](Syntax/)
+
 - Lua implementation - https://github.com/tyraindreams/libWexpr.lua
 - Javascript implementation - https://github.com/tyraindreams/libWexpr.js
-
