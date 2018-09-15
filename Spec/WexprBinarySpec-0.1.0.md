@@ -10,8 +10,7 @@ parsing, as needed. It may also be referred to as the 'ExpressionDataStore' form
 
 Most typing should be straight forward, using names from C (uint8_t, etc).
 Special types include:
-
-UVLQ64 : An unsigned 64bit [Variable Length Quantity](https://en.wikipedia.org/wiki/Variable-length_quantity) . The MSB for each byte is either 0 (which means this is the last octet) or 1 (which means continue to the next octet).
+* UVLQ64 : An unsigned 64bit [Variable Length Quantity](https://en.wikipedia.org/wiki/Variable-length_quantity) . The MSB for each byte is either 0 (which means this is the last octet) or 1 (which means continue to the next octet).
 
 
 The standard extension is .bwexpr. All multibyte values are big endian.
@@ -140,5 +139,5 @@ Example:
 
 Changes
 ---------------
-0.1 - Switched to a VLQ64 encoding instead of a fixed for sizes. Allows 64bit files (along with better compression of small values).
-0.0.1 - Original version
+* 0.1 - Switched to a VLQ64 encoding instead of a fixed for sizes. Allows 64bit files (along with better compression of small values).
+* 0.0.1 - Original version
