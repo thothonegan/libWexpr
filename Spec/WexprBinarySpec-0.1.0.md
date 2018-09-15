@@ -3,7 +3,7 @@ Wexpr Binary Spec 0.1.0
 
 Based on Wexpr Spec 0.1
 
-Refer to [the text spec](WexprSpec.md) for the general concepts and ideas.
+Refer to [the text spec](WexprSpec-0.1.md) for the general concepts and ideas.
 
 This format provides a method for storing a wexpr expression as binary for faster loading,
 parsing, as needed. It may also be referred to as the 'ExpressionDataStore' format in older implementations (WolfWexpr 1, ruby), though this is slightly different.
