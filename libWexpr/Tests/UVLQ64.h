@@ -1,6 +1,6 @@
 //
-/// \file libWexpr/libWexpr.h
-/// \brief Includes all Wexpr files
+/// \file UVLQ64.h
+/// \brief ExpressionType tests
 //
 // #LICENSE_BEGIN:MIT#
 // 
@@ -28,27 +28,32 @@
 // #LICENSE_END#
 //
 
-#ifndef LIBWEXPR_LIBWEXPR_H
-#define LIBWEXPR_LIBWEXPR_H
+#ifndef WEXPR_TESTS_UVLQ64_H
+#define WEXPR_TESTS_UVLQ64_H
 
-#include "Endian.h"
-#include "Error.h"
-#include "Expression.h"
-#include "ExpressionType.h"
-#include "Macros.h"
-#include "ParseFlags.h"
-#include "UVLQ64.h"
+#include <libWexpr/UVLQ64.h>
 
-#define LIBWEXPR_VERSION_MAJOR 1
-#define LIBWEXPR_VERSION_MINOR 0
-#define LIBWEXPR_VERSION_PATCH 0
+#include "UnitTest.h"
+WEXPR_UNITTEST_BEGIN(UVLQ64CanEncodeDecode)
+	// simple tests
+	uint8_t tempBuffer[10];
+	
+	uint64_t x[] = { 0x7f, 0x4000, 0, 0x3ffffe, 0x1fffff, 0x200000, 0x3311a1234df31413ULL};
+	for (int j=0; j < sizeof(x)/sizeof(uint64_t); ++j)
+	{
+		int writeResult = wexpr_uvlq64_write (tempBuffer, sizeof(tempBuffer), x[j]);
+		WEXPR_UNITTEST_ASSERT (writeResult, "Unable to write");
+		
+		uint64_t out;
+		void* readResult = wexpr_uvlq64_read (tempBuffer, sizeof(tempBuffer), &out);
+		WEXPR_UNITTEST_ASSERT (readResult != NULL, "Unable to read");
+		WEXPR_UNITTEST_ASSERT (out == x[j], "Not correct");
+	}
+	
+WEXPR_UNITTEST_END()
 
-LIBWEXPR_EXTERN_C_BEGIN()
+WEXPR_UNITTEST_SUITE_BEGIN (UVLQ64)
+	WEXPR_UNITTEST_SUITE_ADDTEST (UVLQ64, UVLQ64CanEncodeDecode);
+WEXPR_UNITTEST_SUITE_END ()
 
-LIBWEXPR_PUBLIC int wexpr_Version_major ();
-LIBWEXPR_PUBLIC int wexpr_Version_minor ();
-LIBWEXPR_PUBLIC int wexpr_Version_patch ();
-
-LIBWEXPR_EXTERN_C_END()
-
-#endif // LIBWEXPR_LIBWEXPR_H
+#endif // WEXPR_TESTS_UVLQ64_H

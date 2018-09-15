@@ -17,6 +17,7 @@ if (CatalystProject_libWexprTests_ENABLE)
 		${libWexprTests_SOURCE_DIR}/ExpressionErrors.h
 		${libWexprTests_SOURCE_DIR}/ExpressionType.h
 		${libWexprTests_SOURCE_DIR}/UnitTest.h
+		${libWexprTests_SOURCE_DIR}/UVLQ64.h
 	)
 
 	set (libWexprTests_SOURCES

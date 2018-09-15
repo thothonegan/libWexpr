@@ -39,6 +39,8 @@
 
 namespace
 {
+	const uint32_t VersionHandled = 0x00001000; // 0.1.0
+	
 	std::string s_readAllInputFrom (const std::string& inputPath)
 	{
 		std::string data;
@@ -96,7 +98,7 @@ namespace
 		header[1] = 'B'; header[2] = 'W'; header [3] = 'E' ; header[4] = 'X' ; header[5] = 'P'; header[6] = 'R';
 		header[7] = 0x0A;
 		
-		*reinterpret_cast<uint32_t*>(header+8) = wexpr_uint32ToBig(0x00000001);
+		*reinterpret_cast<uint32_t*>(header+8) = wexpr_uint32ToBig(VersionHandled);
 		
 		// reserved is 0
 		
@@ -180,7 +182,7 @@ int main (int argc, char** argv)
 					break;
 				}
 				
-				if (*reinterpret_cast<const uint32_t*>(inputStr.data() + 8) != wexpr_uint32ToBig(0x01))
+				if (*reinterpret_cast<const uint32_t*>(inputStr.data() + 8) != wexpr_uint32ToBig(VersionHandled))
 				{
 					err.code = WexprErrorCodeBinaryUnknownVersion;
 					err.column = 0;
@@ -208,12 +210,20 @@ int main (int argc, char** argv)
 				while (curPos < endPos)
 				{
 					// read the size and type
-					size_t size = wexpr_bigUInt32ToNative(
-						*reinterpret_cast<const uint32_t*> (
-							data + curPos
-						)
+					uint64_t size = 0;
+					const uint8_t* dataNewPos = wexpr_uvlq64_read(
+						reinterpret_cast<const uint8_t*>(data + curPos),
+						endPos-curPos,
+						&size
 					);
-					uint8_t type = data[curPos + sizeof(uint32_t)];
+					
+					// TODO: if !dataNewPos
+					
+					// dont move past the size yet. Just track it for later
+					auto sizeSize = size_t(dataNewPos - (data+curPos));
+					
+					uint8_t type = data[curPos+sizeSize];
+					
 					if (/*given: type >= 0x00 &&*/ type <= 0x04)
 					{
 						// cool, parse it
@@ -226,14 +236,19 @@ int main (int argc, char** argv)
 							break;
 						}
 						
+						// hand it the entire chunk, including the size and the type
 						expr = wexpr_Expression_createFromBinaryChunk(
-							data + curPos, size + sizeof(uint32_t) + sizeof(uint8_t),
+							data + curPos, size + sizeSize + sizeof(uint8_t),
 							&err
 						);
 					}
+					else
+					{
+						printf ("Warning: Unknown chunk with type %d at byte 0x%x\n", int(type), curPos+sizeSize);
+					}
 					
-					// move forward
-					curPos += sizeof(uint32_t) + sizeof(uint8_t);
+					// move forward : pass type, pass size
+					curPos += sizeof(uint8_t) + sizeSize;
 					curPos += size;
 				}
 			}
