@@ -1892,7 +1892,7 @@ WexprMutableBuffer wexpr_Expression_createBinaryRepresentation (WexprExpression*
 		buf.byteSize = sizeSize + sizeof(uint8_t);
 		buf.data = realloc(buf.data, buf.byteSize);
 		
-		wexpr_uvlq64_write (buf.data + 0, sizeSize, 0);
+		wexpr_uvlq64_write ( (uint8_t*)(buf.data) + 0, sizeSize, 0);
 		*BUFCAST (buf.data, sizeSize, uint8_t*) = 0x00;
 	}
 	
@@ -1906,7 +1906,7 @@ WexprMutableBuffer wexpr_Expression_createBinaryRepresentation (WexprExpression*
 		buf.byteSize = sizeSize + sizeof(uint8_t) + valLength;
 		buf.data = realloc(buf.data, buf.byteSize);
 		
-		wexpr_uvlq64_write (buf.data + 0, sizeSize, valLength);
+		wexpr_uvlq64_write ((uint8_t*)(buf.data) + 0, sizeSize, valLength);
 		*BUFCAST (buf.data, sizeSize, uint8_t*) = 0x01;
 		memcpy ((uint8_t*)buf.data + sizeSize + 1, val, valLength);
 	}
@@ -1933,7 +1933,7 @@ WexprMutableBuffer wexpr_Expression_createBinaryRepresentation (WexprExpression*
 		buf.byteSize = sizeSize + sizeof(uint8_t) + sizeOfArrayContents;
 		buf.data = realloc(buf.data, buf.byteSize);
 		
-		wexpr_uvlq64_write (buf.data + 0, sizeSize, sizeOfArrayContents);
+		wexpr_uvlq64_write ((uint8_t*)(buf.data) + 0, sizeSize, sizeOfArrayContents);
 		*BUFCAST (buf.data, sizeSize, uint8_t*) = 0x02; // write the array buffer
 		
 		// data
@@ -1986,7 +1986,7 @@ WexprMutableBuffer wexpr_Expression_createBinaryRepresentation (WexprExpression*
 		// key value pairs
 		buf.byteSize = sizeSize + sizeof(uint8_t) + sizeOfMapContents;
 		buf.data = realloc(buf.data, buf.byteSize);
-		wexpr_uvlq64_write (buf.data + 0, sizeSize, sizeOfMapContents);
+		wexpr_uvlq64_write ((uint8_t*)(buf.data) + 0, sizeSize, sizeOfMapContents);
 		*BUFCAST (buf.data, sizeSize, uint8_t*) = 0x03; // write the map buffer
 		
 		size_t curPos = sizeSize+1;
@@ -1999,7 +1999,7 @@ WexprMutableBuffer wexpr_Expression_createBinaryRepresentation (WexprExpression*
 			size_t keySizeSize = wexpr_uvlq64_bytesize(mapKeyLen);
 			size_t keySize = keySizeSize + sizeof(uint8_t) + mapKeyLen;
 			
-			wexpr_uvlq64_write (buf.data + curPos, keySizeSize, mapKeyLen);
+			wexpr_uvlq64_write ((uint8_t*)(buf.data) + curPos, keySizeSize, mapKeyLen);
 			*BUFCAST (buf.data, curPos + keySizeSize, uint8_t*) = 0x01;
 			memcpy ((uint8_t*)buf.data + curPos + keySizeSize + 1, mapKey, mapKeyLen);
 		
@@ -2030,7 +2030,7 @@ WexprMutableBuffer wexpr_Expression_createBinaryRepresentation (WexprExpression*
 		buf.byteSize = sizeSize + sizeof(uint8_t) + sizeof(uint8_t) + dataSize;
 		buf.data = realloc(buf.data, buf.byteSize);
 		
-		wexpr_uvlq64_write (buf.data + 0, sizeSize, dataSize+1);
+		wexpr_uvlq64_write ((uint8_t*)(buf.data) + 0, sizeSize, dataSize+1);
 		
 		*BUFCAST (buf.data, sizeSize, uint8_t*) = 0x04;
 		*BUFCAST (buf.data, sizeSize+1, uint8_t*) = 0x00; // for now, only raw (no compression)
