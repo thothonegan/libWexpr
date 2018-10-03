@@ -45,7 +45,7 @@ WEXPR_UNITTEST_BEGIN(UVLQ64CanEncodeDecode)
 		WEXPR_UNITTEST_ASSERT (writeResult, "Unable to write");
 		
 		uint64_t out;
-		void* readResult = wexpr_uvlq64_read (tempBuffer, sizeof(tempBuffer), &out);
+		const uint8_t* readResult = wexpr_uvlq64_read (tempBuffer, sizeof(tempBuffer), &out);
 		WEXPR_UNITTEST_ASSERT (readResult != NULL, "Unable to read");
 		WEXPR_UNITTEST_ASSERT (out == x[j], "Not correct");
 	}
