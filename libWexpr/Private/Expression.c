@@ -430,7 +430,7 @@ static PrivateWexprStringValue s_createValueOfString (
 				}
 				else
 				{
-					if (error)
+					if (error && !error->code)
 					{
 						error->code = WexprErrorCodeInvalidStringEscape;
 						error->message = "Invalid escape found in the string";
@@ -482,7 +482,7 @@ static PrivateWexprStringValue s_createValueOfString (
 	
 	if (bufferLength == 0 && !isQuotedString) // cannot have an empty barewords string
 	{
-		if (error)
+		if (error && !error->code)
 		{
 			error->code = WexprErrorCodeEmptyString;
 			error->message = strdup("Was told to parse an empty string");
@@ -952,7 +952,7 @@ static PrivateStringRef s_Expression_parseFromString (WexprExpression* self, Pri
 		{
 			str = s_trimFrontOfString (str, parserState);
 			
-			if (str.size == 0)
+			if (str.size == 0 && !error->code)
 			{
 				error->code = WexprErrorCodeArrayMissingEndParen;
 				error->message = strdup("An Array was missing its ending paren");
@@ -1025,10 +1025,13 @@ static PrivateStringRef s_Expression_parseFromString (WexprExpression* self, Pri
 			
 			if (str.size == 0)
 			{
-				error->code = WexprErrorCodeMapMissingEndParen;
-				error->message = strdup("A Map was missing its ending paren");
-				error->line = parserState->line;
-				error->column = parserState->column;
+				if (!error->code)
+				{
+					error->code = WexprErrorCodeMapMissingEndParen;
+					error->message = strdup("A Map was missing its ending paren");
+					error->line = parserState->line;
+					error->column = parserState->column;
+				}
 				
 				return s_StringRef_createInvalid();
 			}
@@ -1053,11 +1056,14 @@ static PrivateStringRef s_Expression_parseFromString (WexprExpression* self, Pri
 				
 				if (wexpr_Expression_type(keyExpression) != WexprExpressionTypeValue)
 				{
-					error->code = WexprErrorCodeMapKeyMustBeAValue;
-					error->message = strdup("Map keys must be a value");
-					error->line = prevLine;
-					error->column = prevColumn;
-				
+					if (!error->code)
+					{
+						error->code = WexprErrorCodeMapKeyMustBeAValue;
+						error->message = strdup("Map keys must be a value");
+						error->line = prevLine;
+						error->column = prevColumn;
+					}
+					
 					wexpr_Expression_destroy(keyExpression);
 					
 					return s_StringRef_createInvalid();
@@ -1069,11 +1075,16 @@ static PrivateStringRef s_Expression_parseFromString (WexprExpression* self, Pri
 				if (valueExpression->m_type == WexprExpressionTypeInvalid)
 				{
 					// it wasnt filled in! no key found.
-					error->code = WexprErrorCodeMapNoValue;
-					error->message = strdup("Map key must have a value");
-					error->line = prevLine;
-					error->column = prevColumn;
-				
+					// we might have an error code from the upper level (told to parse empty), so overwrite it
+					// otherpossibilites are invalid ref and stuff, and we want to keep those
+					if (!error->code || error->code == WexprErrorCodeEmptyString)
+					{
+						error->code = WexprErrorCodeMapNoValue;
+						error->message = strdup("Map key must have a value");
+						error->line = prevLine;
+						error->column = prevColumn;
+					}
+					
 					wexpr_Expression_destroy(keyExpression);
 					wexpr_Expression_destroy(valueExpression);
 					
@@ -1109,10 +1120,13 @@ static PrivateStringRef s_Expression_parseFromString (WexprExpression* self, Pri
 		size_t endingBracketIndex = s_StringRef_find(str, ']');
 		if (endingBracketIndex == s_InvalidIndex)
 		{
-			error->code = WexprErrorCodeReferenceMissingEndBracket;
-			error->message = strdup ("A reference [] is missing its ending bracket");
-			error->line = parserState->line;
-			error->column = parserState->column;
+			if (!error->code)
+			{
+				error->code = WexprErrorCodeReferenceMissingEndBracket;
+				error->message = strdup ("A reference [] is missing its ending bracket");
+				error->line = parserState->line;
+				error->column = parserState->column;
+			}
 			
 			return s_StringRef_createInvalid();
 		}
@@ -1142,14 +1156,12 @@ static PrivateStringRef s_Expression_parseFromString (WexprExpression* self, Pri
 		
 		if (invalidName)
 		{
-			if (error)
+			if (error && !error->code)
 			{
 				error->code = WexprErrorCodeReferenceInvalidName;
 				error->message = strdup ("A reference doesn't have a valid name");
 				error->line = parserState->line;
 				error->column = parserState->column;
-				
-				return s_StringRef_createInvalid();
 			}
 			
 			return s_StringRef_createInvalid();
@@ -1210,10 +1222,13 @@ static PrivateStringRef s_Expression_parseFromString (WexprExpression* self, Pri
 		if (found != MAP_OK || !elem)
 		{
 			// not found
-			error->code = WexprErrorCodeReferenceUnknownReference;
-			error->message = strdup ("Tried to insert a reference, but couldn't find it.");
-			error->line = parserState->line;
-			error->column = parserState->column;
+			if (!error->code)
+			{
+				error->code = WexprErrorCodeReferenceUnknownReference;
+				error->message = strdup ("Tried to insert a reference, but couldn't find it.");
+				error->line = parserState->line;
+				error->column = parserState->column;
+			}
 			
 			return s_StringRef_createInvalid();
 		}
@@ -1237,10 +1252,13 @@ static PrivateStringRef s_Expression_parseFromString (WexprExpression* self, Pri
 		if (endingQuote == s_InvalidIndex)
 		{
 			// not found
-			error->code = WexprErrorCodeBinaryDataNoEnding;
-			error->message = strdup ("Tried to find the ending > for binary data, but not found.");
-			error->line = parserState->line;
-			error->column = parserState->column;
+			if (!error->code)
+			{
+				error->code = WexprErrorCodeBinaryDataNoEnding;
+				error->message = strdup ("Tried to find the ending > for binary data, but not found.");
+				error->line = parserState->line;
+				error->column = parserState->column;
+			}
 			
 			return s_StringRef_createInvalid();
 		}
@@ -1252,10 +1270,13 @@ static PrivateStringRef s_Expression_parseFromString (WexprExpression* self, Pri
 		
 		if (outBuf.buffer == NULL)
 		{
-			error->code = WexprErrorCodeBinaryDataInvalidBase64;
-			error->message = strdup ("Unable to decode the base64 data.");
-			error->line = parserState->line;
-			error->column = parserState->column;
+			if (!error->code)
+			{
+				error->code = WexprErrorCodeBinaryDataInvalidBase64;
+				error->message = strdup ("Unable to decode the base64 data.");
+				error->line = parserState->line;
+				error->column = parserState->column;
+			}
 			
 			return s_StringRef_createInvalid();
 		}
@@ -1653,10 +1674,13 @@ WexprExpression* wexpr_Expression_createFromLengthString (
 		
 		if (postRest.size != 0)
 		{
-			err.code = WexprErrorCodeExtraDataAfterParsingRoot;
-			err.message = strdup ("Extra data after parsing the root expression");
-			err.line = parserState.line;
-			err.column = parserState.column;
+			if (!err.code)
+			{
+				err.code = WexprErrorCodeExtraDataAfterParsingRoot;
+				err.message = strdup ("Extra data after parsing the root expression");
+				err.line = parserState.line;
+				err.column = parserState.column;
+			}
 		}
 		
 		if (expr->m_type == WexprExpressionTypeInvalid && err.code == WexprErrorCodeNone)
@@ -1670,8 +1694,11 @@ WexprExpression* wexpr_Expression_createFromLengthString (
 	}
 	else
 	{
-		err.code = WexprErrorCodeInvalidUTF8;
-		err.message = strdup ("Invalid UTF8");
+		if (!err.code)
+		{
+			err.code = WexprErrorCodeInvalidUTF8;
+			err.message = strdup ("Invalid UTF8");
+		}
 	}
 	
 	// cleanup our parser state
