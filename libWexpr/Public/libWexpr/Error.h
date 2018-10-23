@@ -43,7 +43,10 @@ LIBWEXPR_EXTERN_C_BEGIN()
 //
 typedef uint8_t WexprErrorCode;
 
-// Possible error codes
+//
+/// Possible error codes
+/// \see WexprErrorCode
+//
 enum
 {
 	WexprErrorCodeNone, ///< Not an error
@@ -77,6 +80,14 @@ typedef uint32_t WexprColumnNumber;
 //
 /// \brief The actual error.
 /// An error consists of two parts - a code which is generally the failure, and a string which can pinpoint the specific reason for the failure.
+/// To use this:
+/// \code{.c}
+///
+/// WexprError err = WEXPR_ERROR_INIT();
+/// /* use */
+/// WEXPR_ERROR_FREE (err);
+///
+/// \endcode
 //
 typedef struct WexprError
 {
@@ -88,6 +99,7 @@ typedef struct WexprError
 
 //
 /// \brief Move an error to another error (c++ style)
+/// \relates WexprError
 //
 #define WEXPR_ERROR_MOVE(dest, source) do { \
 	(dest)->code = (source)->code; \
@@ -100,11 +112,13 @@ typedef struct WexprError
 /// \brief Macro which creates a default non-error
 /// Use this to create your errors:
 ///   WexprError err = WEXPR_ERROR_INIT();
+/// \relates WexprError
 //
 #define WEXPR_ERROR_INIT() { WexprErrorCodeNone, LIBWEXPR_NULLPTR, 0, 0 }
 
 //
 /// \brief Macro which frees an error. Call when done with the error variable, will cleanup as needed or not.
+/// \relates WexprError
 //
 #define WEXPR_ERROR_FREE(err) \
 	if (err.message) { free(err.message); err.message = LIBWEXPR_NULLPTR; }

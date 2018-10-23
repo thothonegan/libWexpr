@@ -54,6 +54,8 @@
 
 //
 /// \brief Swap a uint16 bytes
+/// \param v The value to swap
+/// \return The swapped value
 //
 static inline uint16_t wexpr_uint16Swap(uint16_t v)
 {
@@ -69,6 +71,8 @@ static inline uint16_t wexpr_uint16Swap(uint16_t v)
 
 //
 /// \brief Convert a native uint16 to big
+/// \param v The value to swap
+/// \return The swapped value
 //
 static inline uint16_t wexpr_uint16ToBig(uint16_t v)
 {
@@ -81,6 +85,8 @@ static inline uint16_t wexpr_uint16ToBig(uint16_t v)
 
 //
 /// \brief Convert a big uint16 to native
+/// \param v The value to swap
+/// \return The swapped value
 //
 static inline uint16_t wexpr_bigUInt16ToNative (uint16_t v)
 {
@@ -93,6 +99,8 @@ static inline uint16_t wexpr_bigUInt16ToNative (uint16_t v)
 
 //
 /// \brief Swap a uint32 bytes
+/// \param v The value to swap
+/// \return The swapped value
 //
 static inline uint32_t wexpr_uint32Swap (uint32_t v)
 {
@@ -111,6 +119,8 @@ static inline uint32_t wexpr_uint32Swap (uint32_t v)
 
 //
 /// \brief Convert a native uint32 to big
+/// \param v The value to swap
+/// \return The swapped value
 //
 static inline uint32_t wexpr_uint32ToBig(uint32_t v)
 {
@@ -123,6 +133,8 @@ static inline uint32_t wexpr_uint32ToBig(uint32_t v)
 
 //
 /// \brief Convert a big uint32 to native
+/// \param v The value to swap
+/// \return The swapped value
 //
 static inline uint32_t wexpr_bigUInt32ToNative (uint32_t v)
 {
@@ -136,6 +148,8 @@ static inline uint32_t wexpr_bigUInt32ToNative (uint32_t v)
 
 //
 /// \brief Swap a uint64 bytes
+/// \param v The value to swap
+/// \return The swapped value
 //
 static inline uint64_t wexpr_uint64Swap (uint64_t v)
 {
@@ -159,6 +173,8 @@ static inline uint64_t wexpr_uint64Swap (uint64_t v)
 
 //
 /// \brief Convert a native uint64 to big
+/// \param v The value to convert as native
+/// \return The value converted as big endian.
 //
 static inline uint64_t wexpr_uint64ToBig(uint64_t v)
 {
@@ -171,6 +187,8 @@ static inline uint64_t wexpr_uint64ToBig(uint64_t v)
 
 //
 /// \brief Convert a big uint64 to native
+/// \param v The value to convert, in big endian.
+/// \return The converted value as native
 //
 static inline uint64_t wexpr_bigUInt64ToNative (uint64_t v)
 {

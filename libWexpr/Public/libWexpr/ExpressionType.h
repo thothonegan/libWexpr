@@ -42,8 +42,10 @@ LIBWEXPR_EXTERN_C_BEGIN()
 //
 typedef uint8_t WexprExpressionType;
 
-// These are the different types an expression can be.
-// These numbers are also used in binary formats as needed.
+//
+/// These are the different types an expression can be.
+/// These numbers are also used in binary formats as needed.
+/// \see WexprExpressionType
 //
 enum
 {
@@ -57,7 +59,11 @@ enum
 };
 
 //
-/// \brief Return an expressiontype as a string
+/// \brief Return an expression type as a string
+/// \param self The expression type
+/// \return The string name of the type or NULL if unknown.
+/// \see WexprExpressionType
+///
 /// Will return "Null", "Value", "Map", "Array", etc as needed. Returns NULL if no entry found.
 //
 LIBWEXPR_PUBLIC const char* wexpr_ExpressionType_toString (WexprExpressionType self);

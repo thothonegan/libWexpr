@@ -3,9 +3,9 @@
 Wexpr is a simple configuration language, similar to lisps's S expressions or JSON.
 Designed to be readable, while being quick and easy to parse.
 
-Example file can be found in [simple.wexpr](Examples/simple.wexpr).
+Example file can be found in [simple.wexpr](https://github.com/thothonegan/libWexpr/blob/master/Examples/simple.wexpr).
 
-Some editor syntax files are provided under [Syntax](Syntax/) - most editors choosing 'lisp' for .wexpr files will also be close to correct for basic highlighting.
+Some editor syntax files are provided under [Syntax](https://github.com/thothonegan/libWexpr/blob/master/Syntax/) - most editors choosing 'lisp' for .wexpr files will also be close to correct for basic highlighting.
 
 Basic syntax
 --------------------
@@ -35,9 +35,9 @@ Related Repositories
 
 - Atom - https://github.com/thothonegan/language-wexpr/
 - Vim - https://github.com/thothonegan/wexpr-vim-syntax
-- Katepart (Kwrite/KDevelop) - See [Syntax](Syntax/)
-- Nano - See [Syntax](Syntax/)
-- Notepad++ - See [Syntax](Syntax/)
+- Katepart (Kwrite/KDevelop) - See [Syntax](https://github.com/thothonegan/libWexpr/blob/master/Syntax/)
+- Nano - See [Syntax](https://github.com/thothonegan/libWexpr/blob/master/Syntax/)
+- Notepad++ - See [Syntax](https://github.com/thothonegan/libWexpr/blob/master/Syntax/)
 
 - Lua implementation - https://github.com/tyraindreams/libWexpr.lua
 - Javascript implementation - https://github.com/tyraindreams/libWexpr.js

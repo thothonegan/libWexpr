@@ -1,0 +1,281 @@
+/* Hackerguild CSS */
+
+body {
+	font: 400 14px/22px Noto Sans, 400 14px/22px Roboto, sans-serif;
+	background-color: #01221D;
+	color: #DDFFFE;
+}
+
+div.header {
+	background-image: inherit;
+	
+	border-bottom: 1px solid black;
+}
+
+.title {
+	font: 400 14px/22px Noto Sans, 400 14px/22px Roboto, sans-serif;
+}
+
+.tabs, .tabs2, .tabs3 {
+	background-image: inherit;
+	font-family: 'Lucida Grande','Noto Sans',Geneva,Helvetica,Arial,sans-serif;
+}
+
+
+.tablist li.current a {
+	background-image: inherit;
+}
+
+.tablist li {
+	background-image: inherit;
+}
+
+.tablist a:hover {
+	background-image: inherit;
+}
+
+.navpath ul {
+	background-image: inherit;
+	border: solid 1px black;
+}
+
+.sm-dox {
+	background-image: inherit;
+	border: solid 1px black;
+}
+
+.sm-dox a {
+	background-image: inherit;
+	text-shadow: inherit;
+	color: inherit;
+}
+
+.sm-dox a:hover, .sm-dox a.highlighted {
+	background-image: inherit;
+	
+}
+
+/* hover popover*/
+.sm-dox ul {
+	background: #012f27;
+	
+}
+
+.sm-dox ul a {
+	background-color: #012f27;
+	color: #fff;
+}
+
+.sm-dox ul a:hover {
+	background-image: inherit;
+	background-color: #014439;
+	color: #fff;
+}
+
+div.header {
+	background-color: inherit;
+}
+
+pre.fragment {
+	background-color: inherit;
+}
+
+#nav-tree {
+	background-image: inherit;
+	background-color: inherit;
+}
+
+#nav-tree img {
+	content: inherit;
+}
+
+#nav-tree .selected
+{
+	background-image: inherit;
+}
+
+.ui-resizable-e {
+	background: inherit;
+	background-color: black;
+}
+
+#titlearea {
+	border: 1px solid black;
+}
+
+a {
+	color: #05C9AA;
+}
+
+.tablist a {
+	color: #05C9AA;
+	text-shadow: inherit;
+	background-image: inherit;
+}
+
+.navpath li.footer {
+	color: inherit;
+}
+
+.navpath li {
+	color: inherit;
+}
+
+.navpath ul {
+	color: inherit;
+}
+
+
+.memproto, dl.reflist dt {
+	background-color: #026B5A;
+	background-image: inherit;
+	text-shadow: inherit;
+	color: white;
+}
+
+.memdoc, dl.reflist dd {
+	background-color: #026B5A;
+	background-image: inherit;
+}
+
+.contents a:visited {
+	color: inherit;
+}
+
+div.qindex, div.navtab {
+	background-color: inherit;
+}
+
+.mdescLeft, .mdescRight, .memItemLeft, .memItemRight, .memTemplItemLeft, .memTemplItemRight, .memTemplParams {
+	background-color: inherit;
+}
+
+h2.groupheader {
+	color: #77FAE9;
+}
+
+.navpath li.navelem a {
+	color: inherit;
+	text-shadow: inherit;
+}
+
+#powerTip {
+	background-color: #01221D;
+}
+
+div.fragment {
+	background-color: inherit;
+}
+
+/* functions etc */
+
+.mdescLeft, .mdescRight {
+	color: #A6BFBE;
+}
+
+.memtemplate {
+	color: #009177;
+}
+
+.memTemplParams {
+	color: #009177;
+}
+
+.paramname {
+	color: #FF9494;
+}
+
+span.mlabel {
+	border-top: inherit;
+	border-left: inherit;
+	border-right: inherit;
+	border-bottom: inherit;
+	background-color: #007B65;
+}
+
+.icon {
+	background-color: #007B65;
+}
+
+.directory tr.even {
+	background-color: inherit;
+}
+
+.directory .levels span {
+	color: #05C9AA;
+}
+
+div.toc {
+	background-color: #026556;
+	border: inherit;
+}
+
+div.toc li {
+	background: inherit;
+}
+
+div.toc h3 {
+	color: inherit;
+}
+
+div.ui-resizable-e {
+	background-color: rgba(0,0,0,0.3);
+	
+}
+
+/* syntax highlighting */
+
+span.comment {
+	color: #FF9494;
+}
+
+span.preprocessor {
+	color: #FFBF40;
+}
+
+span.keyword {
+	color: #008000;
+}
+
+span.lineno {
+	background-color: inherit;
+}
+
+span.lineno a {
+	background-color: inherit;
+}
+
+span.lineno a:hover {
+	background-color: inherit;
+}
+
+a.code, a.code:visited, a.line, a.line:visited {
+	color: #6E9FFF;
+}
+
+h2.memtitle {
+	background-image: inherit;
+	background-color: inherit;
+}
+
+/* scrollbar */
+::-webkit-scrollbar {
+	/* width and height for vertical/horizontal scrollbars*/
+	width: 10px;
+	height: 10px;
+}
+
+::-webkit-scrollbar-track {
+	border-radius: 5px;
+	background-color: rgba(0, 0, 0, 0.7);
+}
+
+::-webkit-scrollbar-thumb {
+	border-radius: 5px;
+	background-color: rgba(2, 107, 90, 0.5);
+}
+
+::-webkit-scrollbar-corner {
+	background-color: rgba(255, 255, 255, 0.0);
+}
+

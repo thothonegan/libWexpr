@@ -57,6 +57,7 @@ static inline size_t wexpr_uvlq64_bytesize(uint64_t value)
 /// \brief Write a UVLQ64 (big endian) to the given buffer.
 /// \param buffer The buffer to read from
 /// \param bufferSize The number of bytes we're allowed to read from the buffer (at max).
+/// \param value The value to write
 /// \return 1 on success, 0 on failure (generally invalid buffer).
 //
 static inline int wexpr_uvlq64_write (uint8_t* buffer, size_t bufferSize, uint64_t value)

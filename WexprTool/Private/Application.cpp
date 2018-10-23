@@ -244,7 +244,7 @@ int main (int argc, char** argv)
 					}
 					else
 					{
-						printf ("Warning: Unknown chunk with type %d at byte 0x%x\n", int(type), curPos+sizeSize);
+						printf ("Warning: Unknown chunk with type %d at byte 0x%lx\n", int(type), curPos+sizeSize);
 					}
 					
 					// move forward : pass type, pass size
