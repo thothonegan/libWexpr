@@ -31,6 +31,7 @@
 #include "Expression.h"
 #include "ExpressionErrors.h"
 #include "ExpressionType.h"
+#include "ReferenceTable.h"
 #include "UVLQ64.h"
 
 int main (int argc, char** argv)
@@ -47,6 +48,7 @@ int main (int argc, char** argv)
 	RUN_SUITE(Expression)
 	RUN_SUITE(ExpressionErrors)
 	RUN_SUITE(ExpressionType)
+	RUN_SUITE(ReferenceTable)
 	RUN_SUITE(UVLQ64)
 	
 	printf ("\nTEST RESULTS: Success: %d Failures: %d\n", res.successes, res.failures);

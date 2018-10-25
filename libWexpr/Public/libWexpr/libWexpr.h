@@ -38,6 +38,7 @@
 #include "Macros.h"
 #include "ParseFlags.h"
 #include "UVLQ64.h"
+#include "WriteFlags.h"
 
 #define LIBWEXPR_VERSION_MAJOR 1
 #define LIBWEXPR_VERSION_MINOR 0

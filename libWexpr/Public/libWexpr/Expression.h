@@ -41,6 +41,9 @@
 
 LIBWEXPR_EXTERN_C_BEGIN()
 
+// ReferenceTable.h
+struct WexprReferenceTable;
+
 //
 /// \struct WexprExpression
 /// \brief A wexpr expression
@@ -101,6 +104,20 @@ LIBWEXPR_PUBLIC WexprExpression* wexpr_Expression_createFromString (
 //
 /// \brief Creates an expression from a string. You own and must destroy.
 /// \param str The string, must be UTF-8 safe/compatible.
+/// \param flags Flags about parsing.
+/// \param referenceTable The table to use for pulling references after ones in the file. Will not take ownership.
+/// \param error Will store error information if any occurs.
+/// \return The created expression, or nullptr if none/error occurred.
+//
+LIBWEXPR_PUBLIC WexprExpression* wexpr_Expression_createFromStringWithExternalReferenceTable (
+	const char* str, WexprParseFlags flags,
+	struct WexprReferenceTable* referenceTable,
+	WexprError* error
+);
+
+//
+/// \brief Creates an expression from a string. You own and must destroy.
+/// \param str The string, must be UTF-8 safe/compatible.
 /// \param length The length of str in bytes
 /// \param flags Flags about parsing.
 /// \param error Will store error information if any occurs.
@@ -108,6 +125,21 @@ LIBWEXPR_PUBLIC WexprExpression* wexpr_Expression_createFromString (
 //
 LIBWEXPR_PUBLIC WexprExpression* wexpr_Expression_createFromLengthString (
 	const char* str, size_t length, WexprParseFlags flags,
+	WexprError* error
+);
+
+//
+/// \brief Creates an expression from a string. You own and must destroy.
+/// \param str The string, must be UTF-8 safe/compatible.
+/// \param length The length of str in bytes
+/// \param flags Flags about parsing.
+/// \param referenceTable The table to use for pulling references after ones in the file. Will not take ownership.
+/// \param error Will store error information if any occurs.
+/// \return The created expression, or nullptr if none/error occurred.
+//
+LIBWEXPR_PUBLIC WexprExpression* wexpr_Expression_createFromLengthStringWithExternalReferenceTable (
+	const char* str, size_t length, WexprParseFlags flags,
+	struct WexprReferenceTable* referenceTable,
 	WexprError* error
 );
 

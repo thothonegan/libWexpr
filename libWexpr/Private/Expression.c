@@ -31,6 +31,7 @@
 #include <libWexpr/Expression.h>
 
 #include <libWexpr/Endian.h>
+#include <libWexpr/ReferenceTable.h>
 #include <libWexpr/UVLQ64.h>
 
 #include <stdio.h>
@@ -224,15 +225,16 @@ typedef struct PrivateParserState
 	WexprLineNumber line;
 	WexprColumnNumber column;
 	
-	// alias information list.
-	// contains WexprExpressionPrivateMapElement that we own
-	map_t aliasHash;
+	// reference information lists
+	WexprReferenceTable* internalReferenceMap; // the internal one within the file. Takes priority and we own.
+	WexprReferenceTable* externalReferenceMap; // if provided, the external one for lookups. We dont own.
 	
 } PrivateParserState;
 
 void s_privateParserState_init (PrivateParserState* state)
 {
-	state->aliasHash = hashmap_new();
+	state->externalReferenceMap = NULL; // current not set
+	state->internalReferenceMap = wexpr_ReferenceTable_create(); // used for storing our refs
 	
 	// first position in the file
 	state->line = 1;
@@ -241,7 +243,8 @@ void s_privateParserState_init (PrivateParserState* state)
 
 void s_privateParserState_free (PrivateParserState* state)
 {
-	hashmap_free(state->aliasHash);
+	// cleanup internal
+	wexpr_ReferenceTable_destroy(state->internalReferenceMap);
 }
 
 void s_privateParserState_moveForwardBasedOnString (PrivateParserState* parserState, PrivateStringRef str)
@@ -1181,11 +1184,11 @@ static PrivateStringRef s_Expression_parseFromString (WexprExpression* self, Pri
 		}
 		
 		// now bind the ref - creating a copy of what was made. This will be used for the template.
-		WexprExpressionPrivateMapElement* elem = malloc(sizeof(WexprExpressionPrivateMapElement));
-		elem->key = s_dupLengthString (refName.ptr, refName.size);
-		elem->value = wexpr_Expression_createCopy (self);
-		
-		hashmap_put(parserState->aliasHash, elem->key, elem);
+		wexpr_ReferenceTable_setExpressionForLengthKey(
+			parserState->internalReferenceMap,
+			refName.ptr, refName.size,
+			wexpr_Expression_createCopy (self)
+		);
 		
 		// and continue
 		return resultString;
@@ -1213,13 +1216,24 @@ static PrivateStringRef s_Expression_parseFromString (WexprExpression* self, Pri
 		);
 		str = s_StringRef_slice(str, endingBracketIndex+1);
 	
-		WexprExpressionPrivateMapElement* elem = NULL;
-		char* refStr = s_dupLengthString (refName.ptr, refName.size);
-		int found = hashmap_get(parserState->aliasHash, refStr, (void**) &elem);
+		WexprExpression* referenceExpr = wexpr_ReferenceTable_expressionForLengthKey(
+			parserState->internalReferenceMap,
+			refName.ptr, refName.size
+		);
 		
-		free (refStr);
+		if (!referenceExpr)
+		{
+			// try again with the external if we have it
+			if (parserState->externalReferenceMap)
+			{
+				referenceExpr = wexpr_ReferenceTable_expressionForLengthKey(
+					parserState->externalReferenceMap,
+					refName.ptr, refName.size
+				);
+			}
+		}
 		
-		if (found != MAP_OK || !elem)
+		if (!referenceExpr)
 		{
 			// not found
 			if (!error->code)
@@ -1234,7 +1248,7 @@ static PrivateStringRef s_Expression_parseFromString (WexprExpression* self, Pri
 		}
 		
 		// copy this into ourself
-		s_Expression_copyInto (self, elem->value);
+		s_Expression_copyInto (self, referenceExpr);
 		
 		return str;
 	}
@@ -1648,8 +1662,30 @@ WexprExpression* wexpr_Expression_createFromString (
 	);
 }
 
+WexprExpression* wexpr_Expression_createFromStringWithExternalReferenceTable (
+	const char* str, WexprParseFlags flags,
+	struct WexprReferenceTable* referenceTable,
+	WexprError* error
+)
+{
+	return wexpr_Expression_createFromLengthStringWithExternalReferenceTable(
+		str, strlen(str), flags, referenceTable, error
+	);
+}
+
 WexprExpression* wexpr_Expression_createFromLengthString (
 	const char* str, size_t length, WexprParseFlags flags,
+	WexprError* error
+)
+{
+	return wexpr_Expression_createFromLengthStringWithExternalReferenceTable(
+		str, length, flags, NULL, error
+	);
+}
+
+WexprExpression* wexpr_Expression_createFromLengthStringWithExternalReferenceTable (
+	const char* str, size_t length, WexprParseFlags flags,
+	struct WexprReferenceTable* referenceTable,
 	WexprError* error
 )
 {
@@ -1658,6 +1694,9 @@ WexprExpression* wexpr_Expression_createFromLengthString (
 	
 	PrivateParserState parserState;
 	s_privateParserState_init (&parserState);
+	
+	// use the external ref table if it exists
+	parserState.externalReferenceMap = referenceTable;
 	
 	WexprError err = WEXPR_ERROR_INIT();
 	
@@ -1702,8 +1741,6 @@ WexprExpression* wexpr_Expression_createFromLengthString (
 	}
 	
 	// cleanup our parser state
-	hashmap_iterate(parserState.aliasHash, &s_freeHashData, NULL);
-	
 	if (err.code != WexprErrorCodeNone)
 	{
 		wexpr_Expression_destroy(expr);

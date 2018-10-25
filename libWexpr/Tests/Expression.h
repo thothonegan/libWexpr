@@ -32,6 +32,7 @@
 #define WEXPR_TESTS_EXPRESSION_H
 
 #include <libWexpr/Expression.h>
+#include <libWexpr/ReferenceTable.h>
 
 #include <stdbool.h>
 
@@ -270,6 +271,29 @@ WEXPR_UNITTEST_BEGIN (ExpressionCanDerefMapProperly)
 	WEXPR_ERROR_FREE (err);
 WEXPR_UNITTEST_END()
 
+WEXPR_UNITTEST_BEGIN (ExpressionCanDerefFromExternalTable)
+	WexprError err = WEXPR_ERROR_INIT();
+	WexprReferenceTable* ref = wexpr_ReferenceTable_create();
+	wexpr_ReferenceTable_setExpressionForKey(ref, "name", wexpr_Expression_createValue("Bob"));
+	
+	WexprExpression* expr = wexpr_Expression_createFromStringWithExternalReferenceTable (
+		"@(playerName *[name])", WexprParseFlagNone,
+		ref, &err
+	);
+	
+	WEXPR_UNITTEST_ASSERT (err.code == WexprErrorCodeNone, "Should have no error");
+	WEXPR_UNITTEST_ASSERT (wexpr_Expression_type(expr) == WexprExpressionTypeMap, "Should be a map");
+	
+	WexprExpression* val = wexpr_Expression_mapValueForKey(expr, "playerName");
+	WEXPR_UNITTEST_ASSERT (wexpr_Expression_type(val) == WexprExpressionTypeValue, "Should be a value");
+	
+	WEXPR_UNITTEST_ASSERT (strcmp (wexpr_Expression_value(val), "Bob") == 0, "Evaluated reference properly");
+	
+	wexpr_Expression_destroy(expr);
+	wexpr_ReferenceTable_destroy (ref);
+	WEXPR_ERROR_FREE (err);
+WEXPR_UNITTEST_END()
+
 WEXPR_UNITTEST_BEGIN (ExpressionCanCreateString)
 	WexprError err = WEXPR_ERROR_INIT();
 	WexprExpression* expr = wexpr_Expression_createFromString(
@@ -436,6 +460,7 @@ WEXPR_UNITTEST_SUITE_BEGIN (Expression)
 	WEXPR_UNITTEST_SUITE_ADDTEST (Expression, ExpressionCanDerefReference);
 	WEXPR_UNITTEST_SUITE_ADDTEST (Expression, ExpressionCanDerefArrayReference);
 	WEXPR_UNITTEST_SUITE_ADDTEST (Expression, ExpressionCanDerefMapProperly);
+	WEXPR_UNITTEST_SUITE_ADDTEST (Expression, ExpressionCanDerefFromExternalTable);
 	WEXPR_UNITTEST_SUITE_ADDTEST (Expression, ExpressionCanCreateString);
 	WEXPR_UNITTEST_SUITE_ADDTEST (Expression, ExpressionCanChangeType);
 	WEXPR_UNITTEST_SUITE_ADDTEST (Expression, ExpressionCanSetValue);

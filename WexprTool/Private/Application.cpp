@@ -47,6 +47,10 @@ namespace
 		
 		if (inputPath == "-")
 		{
+			// LINUX:
+			// - Terminal pasting (eg. copypaste to the tty directly) has a limit of 4096 characters.
+			// Anything past that gets cut off. If something wont load via paste, but is fine via cat or file, thats probably the reason.
+			// Nothing we can do about it.
 			return std::string (
 				std::istreambuf_iterator<char>(std::cin), {}
 			);

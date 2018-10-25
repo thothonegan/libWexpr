@@ -14,6 +14,7 @@ project (libWexpr)
 		${libWexpr_SOURCE_DIR}/Public/libWexpr/ExpressionType.h
 		${libWexpr_SOURCE_DIR}/Public/libWexpr/Macros.h
 		${libWexpr_SOURCE_DIR}/Public/libWexpr/ParseFlags.h
+		${libWexpr_SOURCE_DIR}/Public/libWexpr/ReferenceTable.h
 		${libWexpr_SOURCE_DIR}/Public/libWexpr/UVLQ64.h
 		${libWexpr_SOURCE_DIR}/Public/libWexpr/WriteFlags.h
 	)
@@ -30,6 +31,7 @@ project (libWexpr)
 		${libWexpr_SOURCE_DIR}/Private/Expression.c
 		${libWexpr_SOURCE_DIR}/Private/ExpressionType.c
 		${libWexpr_SOURCE_DIR}/Private/libWexpr.c
+		${libWexpr_SOURCE_DIR}/Private/ReferenceTable.c
 
 		${libWexpr_SOURCE_DIR}/Private/ThirdParty/c_hashmap/hashmap.c
 	)
