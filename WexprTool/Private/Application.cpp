@@ -242,7 +242,7 @@ int main (int argc, char** argv)
 						
 						// hand it the entire chunk, including the size and the type
 						expr = wexpr_Expression_createFromBinaryChunk(
-							data + curPos, size + sizeSize + sizeof(uint8_t),
+							data + curPos, size_t(size) + sizeSize + sizeof(uint8_t),
 							&err
 						);
 					}
