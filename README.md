@@ -34,6 +34,7 @@ Related Repositories
 --------------------
 
 - Atom - https://github.com/thothonegan/language-wexpr/
+- VSCode - https://github.com/thothonegan/vscode-wexpr-syntax
 - Vim - https://github.com/thothonegan/wexpr-vim-syntax
 - Katepart (Kwrite/KDevelop) - See [Syntax](https://github.com/thothonegan/libWexpr/blob/master/Syntax/)
 - Nano - See [Syntax](https://github.com/thothonegan/libWexpr/blob/master/Syntax/)
