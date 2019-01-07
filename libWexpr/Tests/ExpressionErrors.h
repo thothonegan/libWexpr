@@ -160,6 +160,28 @@ WEXPR_UNITTEST_BEGIN (ExpressionErrorsInvalidReferenceName)
 	WEXPR_ERROR_FREE (err);
 WEXPR_UNITTEST_END ()
 
+WEXPR_UNITTEST_BEGIN (ExpressionErrorProperLineWhenUnixStyleLineEnding)
+	WexprError err = WEXPR_ERROR_INIT();
+	WexprExpression* valueExpr = wexpr_Expression_createFromString("\n#(1) 1", WexprParseFlagNone, &err);
+	
+	WEXPR_UNITTEST_ASSERT (!valueExpr, "Shouldnt generate expression");
+	WEXPR_UNITTEST_ASSERT (err.code == WexprErrorCodeExtraDataAfterParsingRoot, "Extra data after root");
+	WEXPR_UNITTEST_ASSERT (err.line == 2 && err.column == 6, "Position should be right");
+	
+	WEXPR_ERROR_FREE (err);
+WEXPR_UNITTEST_END ()
+
+WEXPR_UNITTEST_BEGIN (ExpressionErrorProperLineWhenWindowsStyleLineEnding)
+	WexprError err = WEXPR_ERROR_INIT();
+	WexprExpression* valueExpr = wexpr_Expression_createFromString("\r\n#(1) 1", WexprParseFlagNone, &err);
+	
+	WEXPR_UNITTEST_ASSERT (!valueExpr, "Shouldnt generate expression");
+	WEXPR_UNITTEST_ASSERT (err.code == WexprErrorCodeExtraDataAfterParsingRoot, "Extra data after root");
+	WEXPR_UNITTEST_ASSERT (err.line == 2 && err.column == 6, "Position should be right");
+	
+	WEXPR_ERROR_FREE (err);
+WEXPR_UNITTEST_END ()
+
 WEXPR_UNITTEST_SUITE_BEGIN (ExpressionErrors)
 	WEXPR_UNITTEST_SUITE_ADDTEST (ExpressionErrors, ExpressionErrorsEmptyIsInvalid);
 	WEXPR_UNITTEST_SUITE_ADDTEST (ExpressionErrors, ExpressionErrorsExtraDataAfterExpression);
@@ -171,6 +193,8 @@ WEXPR_UNITTEST_SUITE_BEGIN (ExpressionErrors)
 	WEXPR_UNITTEST_SUITE_ADDTEST (ExpressionErrors, ExpressionErrorsBlankIsError);
 	WEXPR_UNITTEST_SUITE_ADDTEST (ExpressionErrors, ExpressionErrorsJustCommentIsError);
 	WEXPR_UNITTEST_SUITE_ADDTEST (ExpressionErrors, ExpressionErrorsInvalidReferenceName);
+	WEXPR_UNITTEST_SUITE_ADDTEST (ExpressionErrors, ExpressionErrorProperLineWhenUnixStyleLineEnding);
+	WEXPR_UNITTEST_SUITE_ADDTEST (ExpressionErrors, ExpressionErrorProperLineWhenWindowsStyleLineEnding);
 WEXPR_UNITTEST_SUITE_END ()
 
 #endif // WEXPR_TESTS_EXPRESSIONERRORS_H

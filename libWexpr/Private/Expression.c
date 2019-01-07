@@ -269,12 +269,14 @@ static const char* s_EndBlockComment = "--)";
 
 static bool s_isNewline (char c)
 {
-	return (c == '\r' || c == '\n');
+	return (c == '\n');
 }
 
 static bool s_isWhitespace (char c)
 {
-	return (c == ' ' || c == '\t' || s_isNewline(c));
+	// we put '\r' in whitespace and not newline so its counted as a column instead of a line, cause windows.
+	// we dont support classic macos style newlines properly as a side effect.
+	return (c == ' ' || c == '\t' || c == '\r' || s_isNewline(c));
 }
 
 static bool s_isNotBarewordSafe (char c)
