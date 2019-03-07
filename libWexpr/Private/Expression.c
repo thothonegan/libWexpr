@@ -310,6 +310,23 @@ static char s_valueForEscape (char c)
 	return 0; // invalid escape
 }
 
+static bool s_requiresEscape (char c)
+{
+	return (c == '"' || c == '\r' || c == '\n' || c == '\t' || c == '\\');
+}
+
+static char s_escapeForValue (char c)
+{
+	// only returns the escape part
+	if (c == '"') return '"';
+	if (c == '\r') return 'r';
+	if (c == '\n') return 'n';
+	if (c == '\t') return 't';
+	if (c == '\\') return '\\';
+	
+	return 0; // invalid
+}
+
 // trims the given string by removing whitespace or comments from the beginning of the string
 
 static PrivateStringRef s_trimFrontOfString (PrivateStringRef str, PrivateParserState* parserState)
@@ -571,6 +588,7 @@ typedef struct PrivateWexprValueStringProperties
 {
 	bool isBarewordSafe;
 	bool needsEscaping;
+	size_t writeByteSize; // not counting quotes if not bareword safe, but counting escapes
 } PrivateWexprValueStringProperties;
 
 static PrivateWexprValueStringProperties s_wexprValueStringProperties (PrivateStringRef ref)
@@ -579,6 +597,7 @@ static PrivateWexprValueStringProperties s_wexprValueStringProperties (PrivateSt
 	
 	props.isBarewordSafe = true; // default to being safe
 	props.needsEscaping = false; // but we dont need escaping
+	props.writeByteSize = 0;
 	
 	size_t len = ref.size;
 	
@@ -592,8 +611,14 @@ static PrivateWexprValueStringProperties s_wexprValueStringProperties (PrivateSt
 		if (s_isNotBarewordSafe(c))
 		{
 			props.isBarewordSafe = false;
-			break;
 		}
+		
+		// we at least write the character
+		props.writeByteSize += 1;
+		
+		// does it need to be escaped?
+		if (c == '"')
+			props.writeByteSize += 1; // needs the escape
 	}
 	
 	if (len == 0)
@@ -1407,11 +1432,28 @@ static PrivateStringRef p_wexpr_Expression_appendStringRepresentationToAllocated
 		);
 		
 		char* newBuffer = buffer;
-		size_t newSize = curBufferSize + len + (props.isBarewordSafe ? 0 : 2); // add quotes if needed
+		size_t newSize = curBufferSize + props.writeByteSize + (props.isBarewordSafe ? 0 : 2); // add quotes if needed
 		newBuffer = realloc (newBuffer, newSize);
 		
 		// copy the value, taking into account quotes or not
-		strncpy (newBuffer+curBufferSize + (props.isBarewordSafe ? 0 : 1), value, len);
+		char* writeBuffer = newBuffer+curBufferSize+(props.isBarewordSafe ? 0 : 1);
+		for (size_t i=0; i < len; ++i)
+		{
+			char c = value[i];
+			
+			if (s_requiresEscape(c))
+			{
+				// write it out as an escape
+				*(writeBuffer) = '\\';
+				*(writeBuffer+1) = s_escapeForValue(c);
+				writeBuffer += 2;
+			}
+			else
+			{
+				*(writeBuffer) = c;
+				++writeBuffer;
+			}
+		}
 		
 		if (!props.isBarewordSafe)
 		{

@@ -77,6 +77,7 @@ WEXPR_UNITTEST_BEGIN (ExpressionCanCreateQuotedValue)
 
 WEXPR_UNITTEST_END ()
 
+
 WEXPR_UNITTEST_BEGIN (ExpressionCanCreateEscapedValue)
 	WexprError err = WEXPR_ERROR_INIT();
 	WexprExpression* valueExpr = wexpr_Expression_createFromString(" \"val\\\"\" ", WexprParseFlagNone, &err);
@@ -87,6 +88,20 @@ WEXPR_UNITTEST_BEGIN (ExpressionCanCreateEscapedValue)
 	
 	wexpr_Expression_destroy(valueExpr);
 	WEXPR_ERROR_FREE (err);
+
+WEXPR_UNITTEST_END ()
+
+WEXPR_UNITTEST_BEGIN (ExpressionCanEncodeEscapedValue)
+	WexprError err = WEXPR_ERROR_INIT();
+	WexprExpression* valueExpr = wexpr_Expression_createFromString(" \"val\\\"\" ", WexprParseFlagNone, &err);
+	
+	char* buf = wexpr_Expression_createStringRepresentation(valueExpr, 0, WexprWriteFlagNone);
+	
+	WEXPR_UNITTEST_ASSERT(strcmp(buf, "\"val\\\"\"") == 0, "Should write out escaped");
+	
+	wexpr_Expression_destroy(valueExpr);
+	WEXPR_ERROR_FREE (err);
+	free(buf);
 
 WEXPR_UNITTEST_END ()
 
@@ -454,6 +469,7 @@ WEXPR_UNITTEST_SUITE_BEGIN (Expression)
 	WEXPR_UNITTEST_SUITE_ADDTEST (Expression, ExpressionCanCreateValue);
 	WEXPR_UNITTEST_SUITE_ADDTEST (Expression, ExpressionCanCreateQuotedValue);
 	WEXPR_UNITTEST_SUITE_ADDTEST (Expression, ExpressionCanCreateEscapedValue);
+	WEXPR_UNITTEST_SUITE_ADDTEST (Expression, ExpressionCanEncodeEscapedValue);
 	WEXPR_UNITTEST_SUITE_ADDTEST (Expression, ExpressionCanCreateNumber);
 	WEXPR_UNITTEST_SUITE_ADDTEST (Expression, ExpressionCanCreateArray);
 	WEXPR_UNITTEST_SUITE_ADDTEST (Expression, ExpressionCanCreateMap);
