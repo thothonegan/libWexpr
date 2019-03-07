@@ -42,3 +42,5 @@ Related Repositories
 
 - Lua implementation - https://github.com/tyraindreams/libWexpr.lua
 - Javascript implementation - https://github.com/tyraindreams/libWexpr.js
+- Ruby - https://github.com/thothonegan/ruby-wexpr/
+
