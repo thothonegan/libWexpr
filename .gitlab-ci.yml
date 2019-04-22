@@ -8,7 +8,7 @@ variables:
     HGUILD_GIT_USE_HTTPS: 1
 
 before_script:
-    # Note: this is here instead of varaibles cause gitlab expands it oddly otherwise
+    # Note: this is here instead of variables cause gitlab expands it oddly otherwise
     - export GIT_SSL_CAINFO="$CI_SERVER_TLS_CA_FILE"
     - git config --global credential.helper '!f() { sleep 1; echo "username=gitlab-ci-token\npassword=${CI_JOB_TOKEN}"; }; f'
     - curl -fsSL 'http://developer.hackerguild/HGuildCI/hguildCISetup.rb' | ruby -- -
@@ -17,10 +17,14 @@ before_script:
 stages:
     - prepare
     - build
+    - test
     - package
 
 
 Linux-X86_64@Clang@@~Debug:Prepare:
+    except:
+      - schedules
+
     cache:
         key: "Linux-X86_64@Clang@@~Debug"
         paths:
@@ -35,11 +39,14 @@ Linux-X86_64@Clang@@~Debug:Prepare:
     variables:
         HGUILD_PROFILE: Linux-X86_64@Clang@@
         HGUILD_BUILDTYPE: Debug
-        
+    
     script:
         - ${HGUILD} install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . --dependenciesOnly ${HGUILD_PROJECT_NAME}@CI
 
 Linux-X86_64@Clang@@~Debug:Build:
+    except:
+      - schedules
+
     cache:
         key: "Linux-X86_64@Clang@@~Debug"
         paths:
@@ -54,15 +61,20 @@ Linux-X86_64@Clang@@~Debug:Build:
     variables:
         HGUILD_PROFILE: Linux-X86_64@Clang@@
         HGUILD_BUILDTYPE: Debug
-        
+
     script:
         - ${HGUILD} install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . ${HGUILD_PROJECT_NAME}@CI
+
+
 
 Linux-X86_64@Clang@@~Debug:Package:
     only:
         - tags   # tags are stable
         - master # master branch we always want the newest ref
         # TODO? release branches. But we dont want to pickup issue branches.
+
+    except:
+      - schedules
 
     cache:
         key: "Linux-X86_64@Clang@@~Debug"
@@ -86,6 +98,9 @@ Linux-X86_64@Clang@@~Debug:Package:
 
 
 Linux-X86_64@Clang@@~Release:Prepare:
+    except:
+      - schedules
+
     cache:
         key: "Linux-X86_64@Clang@@~Release"
         paths:
@@ -100,11 +115,14 @@ Linux-X86_64@Clang@@~Release:Prepare:
     variables:
         HGUILD_PROFILE: Linux-X86_64@Clang@@
         HGUILD_BUILDTYPE: Release
-        
+    
     script:
         - ${HGUILD} install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . --dependenciesOnly ${HGUILD_PROJECT_NAME}@CI
 
 Linux-X86_64@Clang@@~Release:Build:
+    except:
+      - schedules
+
     cache:
         key: "Linux-X86_64@Clang@@~Release"
         paths:
@@ -119,15 +137,20 @@ Linux-X86_64@Clang@@~Release:Build:
     variables:
         HGUILD_PROFILE: Linux-X86_64@Clang@@
         HGUILD_BUILDTYPE: Release
-        
+
     script:
         - ${HGUILD} install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . ${HGUILD_PROJECT_NAME}@CI
+
+
 
 Linux-X86_64@Clang@@~Release:Package:
     only:
         - tags   # tags are stable
         - master # master branch we always want the newest ref
         # TODO? release branches. But we dont want to pickup issue branches.
+
+    except:
+      - schedules
 
     cache:
         key: "Linux-X86_64@Clang@@~Release"
@@ -151,6 +174,9 @@ Linux-X86_64@Clang@@~Release:Package:
 
 
 macOS-X86_64@Clang@@~Debug:Prepare:
+    except:
+      - schedules
+
     cache:
         key: "macOS-X86_64@Clang@@~Debug"
         paths:
@@ -165,11 +191,14 @@ macOS-X86_64@Clang@@~Debug:Prepare:
     variables:
         HGUILD_PROFILE: macOS-X86_64@Clang@@
         HGUILD_BUILDTYPE: Debug
-        
+    
     script:
         - ${HGUILD} install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . --dependenciesOnly ${HGUILD_PROJECT_NAME}@CI
 
 macOS-X86_64@Clang@@~Debug:Build:
+    except:
+      - schedules
+
     cache:
         key: "macOS-X86_64@Clang@@~Debug"
         paths:
@@ -184,15 +213,20 @@ macOS-X86_64@Clang@@~Debug:Build:
     variables:
         HGUILD_PROFILE: macOS-X86_64@Clang@@
         HGUILD_BUILDTYPE: Debug
-        
+
     script:
         - ${HGUILD} install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . ${HGUILD_PROJECT_NAME}@CI
+
+
 
 macOS-X86_64@Clang@@~Debug:Package:
     only:
         - tags   # tags are stable
         - master # master branch we always want the newest ref
         # TODO? release branches. But we dont want to pickup issue branches.
+
+    except:
+      - schedules
 
     cache:
         key: "macOS-X86_64@Clang@@~Debug"
@@ -216,6 +250,9 @@ macOS-X86_64@Clang@@~Debug:Package:
 
 
 macOS-X86_64@Clang@@~Release:Prepare:
+    except:
+      - schedules
+
     cache:
         key: "macOS-X86_64@Clang@@~Release"
         paths:
@@ -230,11 +267,14 @@ macOS-X86_64@Clang@@~Release:Prepare:
     variables:
         HGUILD_PROFILE: macOS-X86_64@Clang@@
         HGUILD_BUILDTYPE: Release
-        
+    
     script:
         - ${HGUILD} install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . --dependenciesOnly ${HGUILD_PROJECT_NAME}@CI
 
 macOS-X86_64@Clang@@~Release:Build:
+    except:
+      - schedules
+
     cache:
         key: "macOS-X86_64@Clang@@~Release"
         paths:
@@ -249,15 +289,20 @@ macOS-X86_64@Clang@@~Release:Build:
     variables:
         HGUILD_PROFILE: macOS-X86_64@Clang@@
         HGUILD_BUILDTYPE: Release
-        
+
     script:
         - ${HGUILD} install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . ${HGUILD_PROJECT_NAME}@CI
+
+
 
 macOS-X86_64@Clang@@~Release:Package:
     only:
         - tags   # tags are stable
         - master # master branch we always want the newest ref
         # TODO? release branches. But we dont want to pickup issue branches.
+
+    except:
+      - schedules
 
     cache:
         key: "macOS-X86_64@Clang@@~Release"
@@ -278,4 +323,27 @@ macOS-X86_64@Clang@@~Release:Package:
         - ${HGUILD} source:install:package --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . ${HGUILD_PROJECT_NAME}@CI build.hguildpkg
         - curl -fsSL 'http://developer.hackerguild/HGuildCI/hguildCIUpload.rb' | ruby -- - "${HGUILD_PROJECT_NAME}" "${CI_COMMIT_REF_NAME}" "${HGUILD_PROFILE}" "${HGUILD_BUILDTYPE}" build.hguildpkg
         - rm build.hguildpkg
+
+Scheduler:
+    only:
+      - schedules
+      
+    cache:
+        key: "macOS-X86_64@Clang@@~Debug"
+        paths:
+        - _HGuild/
+
+    stage: build
+    tags:
+        - ninja
+        - osx
+        - clang
+        
+    variables:
+        HGUILD_PROFILE: macOS-X86_64@Clang@@
+        HGUILD_BUILDTYPE: Debug
+        HGUILD_SOURCENAME: libWexpr@CI
+
+    script:
+      - Support/gitlabScheduler.rb
 
