@@ -41,10 +41,16 @@ file (APPEND ${CMAKE_BINARY_DIR}/Documentation/Doxygen/Doxyfile.override
 	"USE_MDFILE_AS_MAINPAGE = \"${CMAKE_SOURCE_DIR}/README.md\"\n"
 )
 # Now add the target
-add_custom_target (doxygen COMMAND doxygen ${CMAKE_SOURCE_DIR}/Documentation/Doxygen/Doxyfile
+add_custom_target (doxygen
+	COMMAND doxygen ${CMAKE_SOURCE_DIR}/Documentation/Doxygen/Doxyfile
+
+	# https://stackoverflow.com/questions/14678025/how-do-i-specify-a-keyword-for-dash-with-doxygen
+	# set our keyword for searching in dash/zeal
+	COMMAND perl -pi -w -e "s@<string>doxygen</string>@<string>wexpr</string>@s" ${CMAKE_BINARY_DIR}/Documentation/Doxygen/html/Info.plist
+
 	DEPENDS ${CMAKE_SOURCE_DIR}/Documentation/Doxygen/Doxyfile
 	COMMENT "Running Doxygen"
-	USES_TERMINAL
+	USES_TERMINAL VERBATIM
 )
 
 # NOTE: We dont install the documentation anywhere - its up to you to decide how to package it
