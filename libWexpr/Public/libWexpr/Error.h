@@ -122,7 +122,9 @@ typedef struct WexprError
 /// \relates WexprError
 //
 #define WEXPR_ERROR_FREE(err) \
-	if (err.message) { free(err.message); err.message = LIBWEXPR_NULLPTR; }
+	do { \
+		if (err.message) { free(err.message); err.message = LIBWEXPR_NULLPTR; } \
+	} while (0)
 
 LIBWEXPR_EXTERN_C_END()
 
