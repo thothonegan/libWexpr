@@ -6,34 +6,34 @@
 project (libWexpr)
 
 	set (libWexpr_HEADERS
-		${libWexpr_SOURCE_DIR}/Public/libWexpr/libWexpr.h
+		${CMAKE_CURRENT_SOURCE_DIR}/Public/libWexpr/libWexpr.h
 
-		${libWexpr_SOURCE_DIR}/Public/libWexpr/Endian.h
-		${libWexpr_SOURCE_DIR}/Public/libWexpr/Error.h
-		${libWexpr_SOURCE_DIR}/Public/libWexpr/Expression.h
-		${libWexpr_SOURCE_DIR}/Public/libWexpr/ExpressionType.h
-		${libWexpr_SOURCE_DIR}/Public/libWexpr/Macros.h
-		${libWexpr_SOURCE_DIR}/Public/libWexpr/ParseFlags.h
-		${libWexpr_SOURCE_DIR}/Public/libWexpr/ReferenceTable.h
-		${libWexpr_SOURCE_DIR}/Public/libWexpr/UVLQ64.h
-		${libWexpr_SOURCE_DIR}/Public/libWexpr/WriteFlags.h
+		${CMAKE_CURRENT_SOURCE_DIR}/Public/libWexpr/Endian.h
+		${CMAKE_CURRENT_SOURCE_DIR}/Public/libWexpr/Error.h
+		${CMAKE_CURRENT_SOURCE_DIR}/Public/libWexpr/Expression.h
+		${CMAKE_CURRENT_SOURCE_DIR}/Public/libWexpr/ExpressionType.h
+		${CMAKE_CURRENT_SOURCE_DIR}/Public/libWexpr/Macros.h
+		${CMAKE_CURRENT_SOURCE_DIR}/Public/libWexpr/ParseFlags.h
+		${CMAKE_CURRENT_SOURCE_DIR}/Public/libWexpr/ReferenceTable.h
+		${CMAKE_CURRENT_SOURCE_DIR}/Public/libWexpr/UVLQ64.h
+		${CMAKE_CURRENT_SOURCE_DIR}/Public/libWexpr/WriteFlags.h
 	)
 
 	set (libWexpr_PRIVATE_HEADERS
-		${libWexpr_SOURCE_DIR}/Private/ThirdParty/sglib/sglib.h
-		${libWexpr_SOURCE_DIR}/Private/ThirdParty/c_hashmap/hashmap.h
+		${CMAKE_CURRENT_SOURCE_DIR}/Private/ThirdParty/sglib/sglib.h
+		${CMAKE_CURRENT_SOURCE_DIR}/Private/ThirdParty/c_hashmap/hashmap.h
 		
-		${libWexpr_SOURCE_DIR}/Private/Base64.h
+		${CMAKE_CURRENT_SOURCE_DIR}/Private/Base64.h
 	)
 
 	set (libWexpr_SOURCES
-		${libWexpr_SOURCE_DIR}/Private/Base64.c
-		${libWexpr_SOURCE_DIR}/Private/Expression.c
-		${libWexpr_SOURCE_DIR}/Private/ExpressionType.c
-		${libWexpr_SOURCE_DIR}/Private/libWexpr.c
-		${libWexpr_SOURCE_DIR}/Private/ReferenceTable.c
+		${CMAKE_CURRENT_SOURCE_DIR}/Private/Base64.c
+		${CMAKE_CURRENT_SOURCE_DIR}/Private/Expression.c
+		${CMAKE_CURRENT_SOURCE_DIR}/Private/ExpressionType.c
+		${CMAKE_CURRENT_SOURCE_DIR}/Private/libWexpr.c
+		${CMAKE_CURRENT_SOURCE_DIR}/Private/ReferenceTable.c
 
-		${libWexpr_SOURCE_DIR}/Private/ThirdParty/c_hashmap/hashmap.c
+		${CMAKE_CURRENT_SOURCE_DIR}/Private/ThirdParty/c_hashmap/hashmap.c
 	)
 
 	# MSVC gets annoyed with our POSIX functions
@@ -56,7 +56,7 @@ project (libWexpr)
 
 		catalyst_begin_module (libWexpr ${libWexpr_HEADERS} ${libWexpr_PRIVATE_HEADERS} ${libWexpr_SOURCES})
 
-			catalyst_module_copy_licenses (libWexpr ${libWexpr_SOURCE_DIR}/../LICENSE.txt)
+			catalyst_module_copy_licenses (libWexpr ${CMAKE_CURRENT_SOURCE_DIR}/../LICENSE.txt)
 
 			catalyst_append_target_property (libWexpr COMPILE_DEFINITIONS
 				${libWexpr_DEFINES}
@@ -74,7 +74,7 @@ project (libWexpr)
 
 		add_library (libWexpr STATIC ${libWexpr_HEADERS} ${libWexpr_PRIVATE_HEADERS} ${libWexpr_SOURCES})
 
-		set_property (TARGET libWexpr APPEND PROPERTY INCLUDE_DIRECTORIES "${libWexpr_SOURCE_DIR}/Public")
+		set_property (TARGET libWexpr APPEND PROPERTY INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}/Public")
 		set_property (TARGET libWexpr PROPERTY PREFIX "") # no prefix - we added the lib already
 		set_property (TARGET libWexpr APPEND PROPERTY COMPILE_DEFINITIONS ${libWexpr_DEFINES})
 		install (TARGETS libWexpr

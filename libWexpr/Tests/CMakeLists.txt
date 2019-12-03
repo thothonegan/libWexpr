@@ -13,16 +13,16 @@ endif ()
 if (CatalystProject_libWexprTests_ENABLE)
 
 	set (libWexprTests_HEADERS
-		${libWexprTests_SOURCE_DIR}/Expression.h
-		${libWexprTests_SOURCE_DIR}/ExpressionErrors.h
-		${libWexprTests_SOURCE_DIR}/ExpressionType.h
-		${libWexprTests_SOURCE_DIR}/ReferenceTable.h
-		${libWexprTests_SOURCE_DIR}/UnitTest.h
-		${libWexprTests_SOURCE_DIR}/UVLQ64.h
+		${CMAKE_CURRENT_SOURCE_DIR}/Expression.h
+		${CMAKE_CURRENT_SOURCE_DIR}/ExpressionErrors.h
+		${CMAKE_CURRENT_SOURCE_DIR}/ExpressionType.h
+		${CMAKE_CURRENT_SOURCE_DIR}/ReferenceTable.h
+		${CMAKE_CURRENT_SOURCE_DIR}/UnitTest.h
+		${CMAKE_CURRENT_SOURCE_DIR}/UVLQ64.h
 	)
 
 	set (libWexprTests_SOURCES
-		${libWexprTests_SOURCE_DIR}/Main.c
+		${CMAKE_CURRENT_SOURCE_DIR}/Main.c
 	)
 
 	# MSVC gets annoyed with our POSIX functions
@@ -47,7 +47,7 @@ if (CatalystProject_libWexprTests_ENABLE)
 		target_link_libraries (libWexprTests libWexpr)
 
 		set_property (TARGET libWexprTests APPEND PROPERTY INCLUDE_DIRECTORIES
-			"${libWexprTests_SOURCE_DIR}/../Public"
+			"${CMAKE_CURRENT_SOURCE_DIR}/../Public"
 		)
 
 	set_property (TARGET libWexprTests APPEND PROPERTY COMPILE_DEFINITIONS ${libWexprTests_DEFINES})
