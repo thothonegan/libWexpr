@@ -49,7 +49,7 @@ typedef struct WexprReferenceTablePrivateMapElement
 	WexprExpression* value; // we own
 } WexprReferenceTablePrivateMapElement;
 
-static int s_freeHashData (any_t userData, any_t data)
+static int s_refTable_freeHashData (any_t userData, any_t data)
 {
 	WexprReferenceTablePrivateMapElement* elem = data;
 	free (elem->key);
@@ -59,7 +59,7 @@ static int s_freeHashData (any_t userData, any_t data)
 	return MAP_OK; // keep iterating
 }
 
-static int s_freeHashDataAtIndex (any_t userData, any_t data)
+static int s_refTable_freeHashDataAtIndex (any_t userData, any_t data)
 {
 	// userData is pointer to a size_t representing the index
 	size_t* index = (size_t*)userData;
@@ -67,7 +67,7 @@ static int s_freeHashDataAtIndex (any_t userData, any_t data)
 	if (*index == 0)
 	{
 		// do the cleanup for this index - you must destroy after this
-		s_freeHashData(NULL, data);
+		s_refTable_freeHashData(NULL, data);
 		return !MAP_OK; // exit
 	}
 	else
@@ -79,15 +79,15 @@ static int s_freeHashDataAtIndex (any_t userData, any_t data)
 }
 
 
-typedef struct PrivateGetKeyValueAtIndex
+typedef struct PrivateRefTableGetKeyValueAtIndex
 {
 	size_t index; // the index we're requesting
 	void* result; // will be null if not found, or a value if found.
-} PrivateGetKeyValueAtIndex;
+} PrivateRefTableGetKeyValueAtIndex;
 
-static int s_getKeyAtIndex (any_t userData, any_t data)
+static int s_refTable_getKeyAtIndex (any_t userData, any_t data)
 {
-	PrivateGetKeyValueAtIndex* ud = userData;
+	PrivateRefTableGetKeyValueAtIndex* ud = userData;
 	WexprReferenceTablePrivateMapElement* elem = data;
 	
 	if (ud->index == 0)
@@ -103,9 +103,9 @@ static int s_getKeyAtIndex (any_t userData, any_t data)
 	return MAP_OK;
 }
 
-static int s_getValueAtIndex (any_t userData, any_t data)
+static int s_refTable_getValueAtIndex (any_t userData, any_t data)
 {
-	PrivateGetKeyValueAtIndex* ud = userData;
+	PrivateRefTableGetKeyValueAtIndex* ud = userData;
 	WexprReferenceTablePrivateMapElement* elem = data;
 	
 	if (ud->index == 0)
@@ -158,7 +158,7 @@ WexprReferenceTable* wexpr_ReferenceTable_create ()
 void wexpr_ReferenceTable_destroy (WexprReferenceTable* self)
 {
 	// cleanup our hash
-	hashmap_iterate (self->m_hash, &s_freeHashData, NULL);
+	hashmap_iterate (self->m_hash, &s_refTable_freeHashData, NULL);
 	hashmap_free (self->m_hash);
 	
 	// cleanup our memory
@@ -236,7 +236,7 @@ void wexpr_ReferenceTable_removeKey (
 	size_t index = wexpr_ReferenceTable_indexOfKey(self, key);
 	
 	// we test against not because we used that to early return 
-	if (hashmap_iterate(self->m_hash, &s_freeHashDataAtIndex, &index) == !MAP_OK)
+	if (hashmap_iterate(self->m_hash, &s_refTable_freeHashDataAtIndex, &index) == !MAP_OK)
 	{
 		hashmap_remove(self->m_hash, (char*) key);
 	}
@@ -282,11 +282,11 @@ const char* wexpr_ReferenceTable_keyAtIndex (
 	size_t index
 )
 {
-	PrivateGetKeyValueAtIndex val;
+	PrivateRefTableGetKeyValueAtIndex val;
 	val.index = index;
 	val.result = NULL;
 	
-	hashmap_iterate (self->m_hash, &s_getKeyAtIndex, &val);
+	hashmap_iterate (self->m_hash, &s_refTable_getKeyAtIndex, &val);
 	
 	return val.result;
 }
@@ -296,11 +296,11 @@ WexprExpression* wexpr_ReferenceTable_expressionAtIndex (
 	size_t index
 )
 {
-	PrivateGetKeyValueAtIndex val;
+	PrivateRefTableGetKeyValueAtIndex val;
 	val.index = index;
 	val.result = NULL;
 	
-	hashmap_iterate (self->m_hash, &s_getValueAtIndex, &val);
+	hashmap_iterate (self->m_hash, &s_refTable_getValueAtIndex, &val);
 	
 	return val.result;
 }
