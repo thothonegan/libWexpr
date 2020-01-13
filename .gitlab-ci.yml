@@ -8,8 +8,6 @@ variables:
     HGUILD_GIT_USE_HTTPS: 1
 
 before_script:
-    # Note: this is here instead of variables cause gitlab expands it oddly otherwise
-    - export GIT_SSL_CAINFO="$CI_SERVER_TLS_CA_FILE"
     - git config --global credential.helper '!f() { sleep 1; echo "username=gitlab-ci-token\npassword=${CI_JOB_TOKEN}"; }; f'
     - curl -fsSL 'https://developer.i.hackerguild.com/HGuildCI/hguildCISetup.rb' | ruby -- -
     - ${HGUILD} packages:update
