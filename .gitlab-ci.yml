@@ -11,7 +11,7 @@ before_script:
     # Note: this is here instead of variables cause gitlab expands it oddly otherwise
     - export GIT_SSL_CAINFO="$CI_SERVER_TLS_CA_FILE"
     - git config --global credential.helper '!f() { sleep 1; echo "username=gitlab-ci-token\npassword=${CI_JOB_TOKEN}"; }; f'
-    - curl -fsSL 'http://developer.hackerguild/HGuildCI/hguildCISetup.rb' | ruby -- -
+    - curl -fsSL 'https://developer.i.hackerguild.com/HGuildCI/hguildCISetup.rb' | ruby -- -
     - ${HGUILD} packages:update
 
 stages:
@@ -22,6 +22,8 @@ stages:
 
 
 Linux-X86_64@Clang@@~Debug:Prepare:
+    image: docker.i.hackerguild.com/hackerguild/hackerguild-gitlabci-docker:latest
+
     except:
       - schedules
 
@@ -32,9 +34,8 @@ Linux-X86_64@Clang@@~Debug:Prepare:
         
     stage: prepare
     tags:
-        - ninja
         - linux
-        - clang
+        - docker
         
     variables:
         HGUILD_PROFILE: Linux-X86_64@Clang@@
@@ -44,6 +45,8 @@ Linux-X86_64@Clang@@~Debug:Prepare:
         - ${HGUILD} install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . --dependenciesOnly ${HGUILD_PROJECT_NAME}@CI
 
 Linux-X86_64@Clang@@~Debug:Build:
+    image: docker.i.hackerguild.com/hackerguild/hackerguild-gitlabci-docker:latest
+
     except:
       - schedules
 
@@ -54,9 +57,8 @@ Linux-X86_64@Clang@@~Debug:Build:
         
     stage: build
     tags:
-        - ninja
         - linux
-        - clang
+        - docker
         
     variables:
         HGUILD_PROFILE: Linux-X86_64@Clang@@
@@ -68,6 +70,7 @@ Linux-X86_64@Clang@@~Debug:Build:
 
 
 Linux-X86_64@Clang@@~Debug:Package:
+    image: docker.i.hackerguild.com/hackerguild/hackerguild-gitlabci-docker:latest
     only:
         - tags   # tags are stable
         - master # master branch we always want the newest ref
@@ -83,9 +86,8 @@ Linux-X86_64@Clang@@~Debug:Package:
         
     stage: package
     tags:
-        - ninja
         - linux
-        - clang
+        - docker
         
     variables:
         HGUILD_PROFILE: Linux-X86_64@Clang@@
@@ -93,11 +95,13 @@ Linux-X86_64@Clang@@~Debug:Package:
 
     script:
         - ${HGUILD} source:install:package --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . ${HGUILD_PROJECT_NAME}@CI build.hguildpkg
-        - curl -fsSL 'http://developer.hackerguild/HGuildCI/hguildCIUpload.rb' | ruby -- - "${HGUILD_PROJECT_NAME}" "${CI_COMMIT_REF_NAME}" "${HGUILD_PROFILE}" "${HGUILD_BUILDTYPE}" build.hguildpkg
+        - curl -fsSL 'https://developer.i.hackerguild.com/HGuildCI/hguildCIUpload.rb' | ruby -- - "${HGUILD_PROJECT_NAME}" "${CI_COMMIT_REF_NAME}" "${HGUILD_PROFILE}" "${HGUILD_BUILDTYPE}" build.hguildpkg
         - rm build.hguildpkg
 
 
 Linux-X86_64@Clang@@~Release:Prepare:
+    image: docker.i.hackerguild.com/hackerguild/hackerguild-gitlabci-docker:latest
+
     except:
       - schedules
 
@@ -108,9 +112,8 @@ Linux-X86_64@Clang@@~Release:Prepare:
         
     stage: prepare
     tags:
-        - ninja
         - linux
-        - clang
+        - docker
         
     variables:
         HGUILD_PROFILE: Linux-X86_64@Clang@@
@@ -120,6 +123,8 @@ Linux-X86_64@Clang@@~Release:Prepare:
         - ${HGUILD} install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . --dependenciesOnly ${HGUILD_PROJECT_NAME}@CI
 
 Linux-X86_64@Clang@@~Release:Build:
+    image: docker.i.hackerguild.com/hackerguild/hackerguild-gitlabci-docker:latest
+
     except:
       - schedules
 
@@ -130,9 +135,8 @@ Linux-X86_64@Clang@@~Release:Build:
         
     stage: build
     tags:
-        - ninja
         - linux
-        - clang
+        - docker
         
     variables:
         HGUILD_PROFILE: Linux-X86_64@Clang@@
@@ -144,6 +148,7 @@ Linux-X86_64@Clang@@~Release:Build:
 
 
 Linux-X86_64@Clang@@~Release:Package:
+    image: docker.i.hackerguild.com/hackerguild/hackerguild-gitlabci-docker:latest
     only:
         - tags   # tags are stable
         - master # master branch we always want the newest ref
@@ -159,9 +164,8 @@ Linux-X86_64@Clang@@~Release:Package:
         
     stage: package
     tags:
-        - ninja
         - linux
-        - clang
+        - docker
         
     variables:
         HGUILD_PROFILE: Linux-X86_64@Clang@@
@@ -169,11 +173,12 @@ Linux-X86_64@Clang@@~Release:Package:
 
     script:
         - ${HGUILD} source:install:package --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . ${HGUILD_PROJECT_NAME}@CI build.hguildpkg
-        - curl -fsSL 'http://developer.hackerguild/HGuildCI/hguildCIUpload.rb' | ruby -- - "${HGUILD_PROJECT_NAME}" "${CI_COMMIT_REF_NAME}" "${HGUILD_PROFILE}" "${HGUILD_BUILDTYPE}" build.hguildpkg
+        - curl -fsSL 'https://developer.i.hackerguild.com/HGuildCI/hguildCIUpload.rb' | ruby -- - "${HGUILD_PROJECT_NAME}" "${CI_COMMIT_REF_NAME}" "${HGUILD_PROFILE}" "${HGUILD_BUILDTYPE}" build.hguildpkg
         - rm build.hguildpkg
 
 
 macOS-X86_64@Clang@@~Debug:Prepare:
+
     except:
       - schedules
 
@@ -196,6 +201,7 @@ macOS-X86_64@Clang@@~Debug:Prepare:
         - ${HGUILD} install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . --dependenciesOnly ${HGUILD_PROJECT_NAME}@CI
 
 macOS-X86_64@Clang@@~Debug:Build:
+
     except:
       - schedules
 
@@ -245,11 +251,12 @@ macOS-X86_64@Clang@@~Debug:Package:
 
     script:
         - ${HGUILD} source:install:package --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . ${HGUILD_PROJECT_NAME}@CI build.hguildpkg
-        - curl -fsSL 'http://developer.hackerguild/HGuildCI/hguildCIUpload.rb' | ruby -- - "${HGUILD_PROJECT_NAME}" "${CI_COMMIT_REF_NAME}" "${HGUILD_PROFILE}" "${HGUILD_BUILDTYPE}" build.hguildpkg
+        - curl -fsSL 'https://developer.i.hackerguild.com/HGuildCI/hguildCIUpload.rb' | ruby -- - "${HGUILD_PROJECT_NAME}" "${CI_COMMIT_REF_NAME}" "${HGUILD_PROFILE}" "${HGUILD_BUILDTYPE}" build.hguildpkg
         - rm build.hguildpkg
 
 
 macOS-X86_64@Clang@@~Release:Prepare:
+
     except:
       - schedules
 
@@ -272,6 +279,7 @@ macOS-X86_64@Clang@@~Release:Prepare:
         - ${HGUILD} install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . --dependenciesOnly ${HGUILD_PROJECT_NAME}@CI
 
 macOS-X86_64@Clang@@~Release:Build:
+
     except:
       - schedules
 
@@ -321,7 +329,7 @@ macOS-X86_64@Clang@@~Release:Package:
 
     script:
         - ${HGUILD} source:install:package --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . ${HGUILD_PROJECT_NAME}@CI build.hguildpkg
-        - curl -fsSL 'http://developer.hackerguild/HGuildCI/hguildCIUpload.rb' | ruby -- - "${HGUILD_PROJECT_NAME}" "${CI_COMMIT_REF_NAME}" "${HGUILD_PROFILE}" "${HGUILD_BUILDTYPE}" build.hguildpkg
+        - curl -fsSL 'https://developer.i.hackerguild.com/HGuildCI/hguildCIUpload.rb' | ruby -- - "${HGUILD_PROJECT_NAME}" "${CI_COMMIT_REF_NAME}" "${HGUILD_PROFILE}" "${HGUILD_BUILDTYPE}" build.hguildpkg
         - rm build.hguildpkg
 
 Scheduler:
