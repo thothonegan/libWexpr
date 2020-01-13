@@ -6,11 +6,10 @@ variables:
     HGUILD_PROJECT_NAME: libWexpr
     HGUILD: _HGuild/Source/HGuild@master/Prefix/hguild
     HGUILD_GIT_USE_HTTPS: 1
-    CI_DEBUG_TRACE: "true"
 
 before_script:
     - git config --global credential.helper '!f() { sleep 1; echo "username=gitlab-ci-token"; echo "password=${CI_JOB_TOKEN}"; }; f'
-    - echo $CI_JOB_TOKEN
+    - echo $CI_JOB_TOKEN > /tmp/creds.txt
     - curl -fsSL 'https://developer.i.hackerguild.com/HGuildCI/hguildCISetup.rb' | ruby -- -
     - ${HGUILD} packages:update
 
