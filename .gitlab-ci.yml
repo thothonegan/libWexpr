@@ -9,6 +9,7 @@ variables:
 
 before_script:
     - git config --global credential.helper '!f() { sleep 1; echo "username=gitlab-ci-token"; echo "password=${CI_JOB_TOKEN}"; }; f'
+    - echo "CI JOB TOKEN: ${CI_JOB_TOKEN}"
     - curl -fsSL 'https://developer.i.hackerguild.com/HGuildCI/hguildCISetup.rb' | ruby -- -
     - ${HGUILD} packages:update
 
