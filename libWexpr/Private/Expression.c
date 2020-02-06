@@ -1390,6 +1390,45 @@ void s_fillIndent (char* buffer, size_t indent)
 		buffer[i] = '\t';
 }
 
+//
+/// Writes string to writeBuffer using stringProps. Will add quotes and escapes as needed.
+/// The buffer must be the following sizes:
+/// - if stringProps.isBarewordSafe : writeBuffer must have stringProps.writeByteSize (strlen(string)) length
+/// - if stringProps.isBarewordSafe : writeBuffer must have stringProps.writeByteSize + 2 size (we will  write the quotes)
+//
+void s_writeStringEscapedToBuffer(char* writeBuffer, const char* string, size_t stringLength, PrivateWexprValueStringProperties props)
+{
+	if (!props.isBarewordSafe)
+	{
+		*writeBuffer = '\"';
+		writeBuffer += 1;
+	}
+
+	for (size_t i=0; i < stringLength; ++i)
+	{
+		char c = string[i];
+		
+		if (s_requiresEscape(c))
+		{
+			// write it out as an escape
+			*(writeBuffer) = '\\';
+			*(writeBuffer+1) = s_escapeForValue(c);
+			writeBuffer += 2;
+		}
+		else
+		{
+			*(writeBuffer) = c;
+			++writeBuffer;
+		}
+	}
+	
+	if (!props.isBarewordSafe)
+	{
+		// add quotes
+		*writeBuffer = '\"';
+	}
+}
+
 // --------------------- PRIVATE ----------------------------------
 
 // should have no room for the null pointer. append at end
@@ -1436,32 +1475,9 @@ static PrivateStringRef p_wexpr_Expression_appendStringRepresentationToAllocated
 		newBuffer = realloc (newBuffer, newSize);
 		
 		// copy the value, taking into account quotes or not
-		char* writeBuffer = newBuffer+curBufferSize+(props.isBarewordSafe ? 0 : 1);
-		for (size_t i=0; i < len; ++i)
-		{
-			char c = value[i];
-			
-			if (s_requiresEscape(c))
-			{
-				// write it out as an escape
-				*(writeBuffer) = '\\';
-				*(writeBuffer+1) = s_escapeForValue(c);
-				writeBuffer += 2;
-			}
-			else
-			{
-				*(writeBuffer) = c;
-				++writeBuffer;
-			}
-		}
-		
-		if (!props.isBarewordSafe)
-		{
-			// add quotes
-			newBuffer[curBufferSize] = '\"';
-			newBuffer[newSize-1] = '\"';
-		}
-		
+		char* writeBuffer = newBuffer+curBufferSize;
+		s_writeStringEscapedToBuffer(writeBuffer, value, len, props);
+
 		return s_stringRef_createFromPointerSize(newBuffer, newSize);
 	}
 	
@@ -1614,17 +1630,22 @@ static PrivateStringRef p_wexpr_Expression_appendStringRepresentationToAllocated
 				continue; // we shouldnt ever get an empty key, but its possible currently in the case of dereffing in a key for some reason : @([a]a b *[a] c)
 			
 			size_t keyLength = strlen(key);
+			size_t keyMemoryLength = keyLength;
 			WexprExpression* value = wexpr_Expression_mapValueAt(self, i);
+			
+			PrivateWexprValueStringProperties keyProps = s_wexprValueStringProperties(s_stringRef_createFromPointerSize(key, keyLength));
+			if (!keyProps.isBarewordSafe)
+				keyMemoryLength = keyProps.writeByteSize + 2; // cause we need to quote or escape it
 			
 			// if human readable, indent the line, output the key, space, object, newline
 			if (writeHumanReadable)
 			{
 				size_t indentBytes = s_byteSizeForIndent(indent+1);
 				size_t prevSize = newSize;
-				newSize += indentBytes + keyLength + 1; // get us to the object
+				newSize += indentBytes + keyMemoryLength + 1; // get us to the object
 				newBuffer = realloc(newBuffer, newSize);
 				s_fillIndent(newBuffer+prevSize, indent+1);
-				strncpy (newBuffer+prevSize+indentBytes, key, keyLength);
+				s_writeStringEscapedToBuffer(newBuffer+prevSize+indentBytes, key, keyLength, keyProps);
 				newBuffer[newSize-1] = ' ';
 				
 				// add the value
