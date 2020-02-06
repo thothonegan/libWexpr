@@ -1675,8 +1675,11 @@ static PrivateStringRef p_wexpr_Expression_appendStringRepresentationToAllocated
 				// now key, space, value
 				size_t prevSize = newSize;
 				newSize += keyLength+1;
+				if (!keyProps.isBarewordSafe)
+					newSize += 2; // quotes
+
 				newBuffer = realloc(newBuffer, newSize);
-				strncpy (newBuffer+prevSize, key, keyLength);
+				s_writeStringEscapedToBuffer(newBuffer+prevSize, key, keyLength, keyProps);
 				newBuffer[newSize-1] = ' ';
 				
 				// add our value
