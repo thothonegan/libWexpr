@@ -7,6 +7,11 @@
 
 cmake_minimum_required (VERSION 3.3)
 
+project (libWexpr
+	#VERSION master
+	DESCRIPTION "Library for handling W Expressions"
+)
+
 set (CMAKE_C_STANDARD 99)
 set (CMAKE_C_STANDARD_REQUIRED YES)
 
