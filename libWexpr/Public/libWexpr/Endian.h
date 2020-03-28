@@ -160,7 +160,7 @@ static inline uint64_t wexpr_uint64Swap (uint64_t v)
 		return _byteswap_uint64 (v);
 	#else // c method
 		return
-			( v >> 56) ||
+			( v >> 56) |
 			((v << 40) & 0x00FF000000000000ull) |
 			((v << 24) & 0x0000FF0000000000ull) |
 			((v << 8 ) & 0x000000FF00000000ull) |
