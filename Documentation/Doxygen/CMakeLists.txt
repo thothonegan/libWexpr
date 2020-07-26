@@ -40,17 +40,24 @@ file (APPEND ${CMAKE_BINARY_DIR}/Documentation/Doxygen/Doxyfile.override
 file (APPEND ${CMAKE_BINARY_DIR}/Documentation/Doxygen/Doxyfile.override
 	"USE_MDFILE_AS_MAINPAGE = \"${CMAKE_SOURCE_DIR}/README.md\"\n"
 )
-# Now add the target
-add_custom_target (doxygen
-	COMMAND doxygen ${CMAKE_SOURCE_DIR}/Documentation/Doxygen/Doxyfile
 
-	# https://stackoverflow.com/questions/14678025/how-do-i-specify-a-keyword-for-dash-with-doxygen
-	# set our keyword for searching in dash/zeal
-	COMMAND perl -pi -w -e "s@<string>doxygen</string>@<string>wexpr</string>@s" ${CMAKE_BINARY_DIR}/Documentation/Doxygen/html/Info.plist
+if (CATALYST_INSTALL_PREFIX)
+	catalyst_doxygen_target (
+		doxygen "wexpr" "${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile"
+		${CMAKE_CURRENT_BINARY_DIR}/html
+		"Documentation/Doxygen/"
+	)
+else ()
+	# roughly equivilant for non-catalyst
+	add_custom_target (doxygen
+		COMMAND doxygen ${CMAKE_SOURCE_DIR}/Documentation/Doxygen/Doxyfile
 
-	DEPENDS ${CMAKE_SOURCE_DIR}/Documentation/Doxygen/Doxyfile
-	COMMENT "Running Doxygen"
-	USES_TERMINAL VERBATIM
-)
+		# https://stackoverflow.com/questions/14678025/how-do-i-specify-a-keyword-for-dash-with-doxygen
+		# set our keyword for searching in dash/zeal
+		COMMAND perl -pi -w -e "s@<string>doxygen</string>@<string>wexpr</string>@s" ${CMAKE_BINARY_DIR}/Documentation/Doxygen/html/Info.plist
 
-# NOTE: We dont install the documentation anywhere - its up to you to decide how to package it
+		DEPENDS ${CMAKE_SOURCE_DIR}/Documentation/Doxygen/Doxyfile
+		COMMENT "Running Doxygen"
+		USES_TERMINAL VERBATIM
+	)
+endif ()

@@ -64,7 +64,7 @@ if schedulerJob == "build_docset"
 	
 	# - upload the docset
 	
-	runProcess ("curl -fsSL 'http://developer.hackerguild/Documentation/api/documentationUpload.rb' | ruby -- - #{project} #{dateFilename} #{IDENTIFIER}.docset #{htmlPath}/#{outFile}") or abort ("Failed to upload")
+    runProcess ("curl -fsSL 'https://developer.i.hackerguild.com/Documentation/api/documentationUpload.rb' | ruby -- - #{project} #{dateFilename} #{IDENTIFIER}.docset #{htmlPath}/#{outFile}") or abort ("Failed to upload")
 	
 	# - delete the html folder and recreate empty
 	runProcess("rm -Rf #{htmlPath} && mkdir #{htmlPath}") or abort ("Failed to cleanup")
