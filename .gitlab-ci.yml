@@ -43,6 +43,7 @@ Linux-X86_64@Clang@@~Debug:Prepare:
     tags:
         - linux
         - docker
+        - x86_64
         
     variables:
         HGUILD_PROFILE: Linux-X86_64@Clang@@
@@ -75,6 +76,7 @@ Linux-X86_64@Clang@@~Debug:Build:
     tags:
         - linux
         - docker
+        - x86_64
         
     variables:
         HGUILD_PROFILE: Linux-X86_64@Clang@@
@@ -114,6 +116,7 @@ Linux-X86_64@Clang@@~Debug:Package:
     tags:
         - linux
         - docker
+        - x86_64
         
     variables:
         HGUILD_PROFILE: Linux-X86_64@Clang@@
@@ -146,6 +149,7 @@ Linux-X86_64@Clang@@~Release:Prepare:
     tags:
         - linux
         - docker
+        - x86_64
         
     variables:
         HGUILD_PROFILE: Linux-X86_64@Clang@@
@@ -178,6 +182,7 @@ Linux-X86_64@Clang@@~Release:Build:
     tags:
         - linux
         - docker
+        - x86_64
         
     variables:
         HGUILD_PROFILE: Linux-X86_64@Clang@@
@@ -217,10 +222,435 @@ Linux-X86_64@Clang@@~Release:Package:
     tags:
         - linux
         - docker
+        - x86_64
         
     variables:
         HGUILD_PROFILE: Linux-X86_64@Clang@@
         HGUILD_BUILDTYPE: Release
+
+    script:
+        - ${HGUILD} source:install:package --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . ${HGUILD_PROJECT_NAME}@CI build.hguildpkg
+        - curl -fsSL 'https://developer.i.hackerguild.com/HGuildCI/hguildCIUpload.rb' | ruby -- - "${HGUILD_PROJECT_NAME}" "${CI_COMMIT_REF_NAME}" "${HGUILD_PROFILE}" "${HGUILD_BUILDTYPE}" build.hguildpkg
+        - rm build.hguildpkg
+
+
+
+
+macOS-ARM64@Clang@@~Debug:Prepare:
+
+    except:
+      - schedules
+
+    artifacts:
+        paths:
+        - _HGuild/Build/macOS-ARM64@Clang@@/Debug/${HGUILD_PROJECT_NAME}@CI
+        
+    cache:
+        key: "macOS-ARM64@Clang@@~Debug"
+        paths:
+        - _HGuild/
+    
+    stage: prepare
+    tags:
+        - ninja
+        - osx
+        - clang
+        - arm64
+        
+    variables:
+        HGUILD_PROFILE: macOS-ARM64@Clang@@
+        HGUILD_BUILDTYPE: Debug
+    
+    script:
+        - ${HGUILD} install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . --dependenciesOnly ${HGUILD_PROJECT_NAME}@CI
+
+
+
+macOS-ARM64@Clang@@~Debug:Build:
+
+    except:
+      - schedules
+
+    needs:
+      - macOS-ARM64@Clang@@~Debug:Prepare
+    
+    artifacts:
+        paths:
+        - _HGuild/Build/macOS-ARM64@Clang@@/Debug/${HGUILD_PROJECT_NAME}@CI
+            
+    cache:
+        key: "macOS-ARM64@Clang@@~Debug"
+        paths:
+        - _HGuild/
+ 
+    stage: build
+    tags:
+        - ninja
+        - osx
+        - clang
+        - arm64
+        
+    variables:
+        HGUILD_PROFILE: macOS-ARM64@Clang@@
+        HGUILD_BUILDTYPE: Debug
+
+    script:
+        - ${HGUILD} install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . ${HGUILD_PROJECT_NAME}@CI
+
+
+
+
+
+
+
+macOS-ARM64@Clang@@~Debug:Package:
+    only:
+        - tags   # tags are stable
+        - master # master branch we always want the newest ref
+        # TODO? release branches. But we dont want to pickup issue branches.
+
+    # package has no needs - requires everyone to finish the previous stages
+
+    except:
+      - schedules
+
+    artifacts:
+        paths:
+        - _HGuild/Build/macOS-ARM64@Clang@@/Debug/${HGUILD_PROJECT_NAME}@CI
+            
+    cache:
+        key: "macOS-ARM64@Clang@@~Debug"
+        paths:
+        - _HGuild/
+ 
+    stage: package
+    tags:
+        - ninja
+        - osx
+        - clang
+        - arm64
+        
+    variables:
+        HGUILD_PROFILE: macOS-ARM64@Clang@@
+        HGUILD_BUILDTYPE: Debug
+
+    script:
+        - ${HGUILD} source:install:package --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . ${HGUILD_PROJECT_NAME}@CI build.hguildpkg
+        - curl -fsSL 'https://developer.i.hackerguild.com/HGuildCI/hguildCIUpload.rb' | ruby -- - "${HGUILD_PROJECT_NAME}" "${CI_COMMIT_REF_NAME}" "${HGUILD_PROFILE}" "${HGUILD_BUILDTYPE}" build.hguildpkg
+        - rm build.hguildpkg
+
+
+
+
+macOS-ARM64@Clang@@~RelWithDebInfo:Prepare:
+
+    except:
+      - schedules
+
+    artifacts:
+        paths:
+        - _HGuild/Build/macOS-ARM64@Clang@@/RelWithDebInfo/${HGUILD_PROJECT_NAME}@CI
+        
+    cache:
+        key: "macOS-ARM64@Clang@@~RelWithDebInfo"
+        paths:
+        - _HGuild/
+    
+    stage: prepare
+    tags:
+        - ninja
+        - osx
+        - clang
+        - arm64
+        
+    variables:
+        HGUILD_PROFILE: macOS-ARM64@Clang@@
+        HGUILD_BUILDTYPE: RelWithDebInfo
+    
+    script:
+        - ${HGUILD} install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . --dependenciesOnly ${HGUILD_PROJECT_NAME}@CI
+
+
+
+macOS-ARM64@Clang@@~RelWithDebInfo:Build:
+
+    except:
+      - schedules
+
+    needs:
+      - macOS-ARM64@Clang@@~RelWithDebInfo:Prepare
+    
+    artifacts:
+        paths:
+        - _HGuild/Build/macOS-ARM64@Clang@@/RelWithDebInfo/${HGUILD_PROJECT_NAME}@CI
+            
+    cache:
+        key: "macOS-ARM64@Clang@@~RelWithDebInfo"
+        paths:
+        - _HGuild/
+ 
+    stage: build
+    tags:
+        - ninja
+        - osx
+        - clang
+        - arm64
+        
+    variables:
+        HGUILD_PROFILE: macOS-ARM64@Clang@@
+        HGUILD_BUILDTYPE: RelWithDebInfo
+
+    script:
+        - ${HGUILD} install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . ${HGUILD_PROJECT_NAME}@CI
+
+
+
+
+
+
+
+macOS-ARM64@Clang@@~RelWithDebInfo:Package:
+    only:
+        - tags   # tags are stable
+        - master # master branch we always want the newest ref
+        # TODO? release branches. But we dont want to pickup issue branches.
+
+    # package has no needs - requires everyone to finish the previous stages
+
+    except:
+      - schedules
+
+    artifacts:
+        paths:
+        - _HGuild/Build/macOS-ARM64@Clang@@/RelWithDebInfo/${HGUILD_PROJECT_NAME}@CI
+            
+    cache:
+        key: "macOS-ARM64@Clang@@~RelWithDebInfo"
+        paths:
+        - _HGuild/
+ 
+    stage: package
+    tags:
+        - ninja
+        - osx
+        - clang
+        - arm64
+        
+    variables:
+        HGUILD_PROFILE: macOS-ARM64@Clang@@
+        HGUILD_BUILDTYPE: RelWithDebInfo
+
+    script:
+        - ${HGUILD} source:install:package --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . ${HGUILD_PROJECT_NAME}@CI build.hguildpkg
+        - curl -fsSL 'https://developer.i.hackerguild.com/HGuildCI/hguildCIUpload.rb' | ruby -- - "${HGUILD_PROJECT_NAME}" "${CI_COMMIT_REF_NAME}" "${HGUILD_PROFILE}" "${HGUILD_BUILDTYPE}" build.hguildpkg
+        - rm build.hguildpkg
+
+
+
+
+macOS-ARM64@Clang@macOS-X86_64@~Debug:Prepare:
+
+    except:
+      - schedules
+
+    artifacts:
+        paths:
+        - _HGuild/Build/macOS-ARM64@Clang@macOS-X86_64@/Debug/${HGUILD_PROJECT_NAME}@CI
+        
+    cache:
+        key: "macOS-ARM64@Clang@macOS-X86_64@~Debug"
+        paths:
+        - _HGuild/
+    
+    stage: prepare
+    tags:
+        - ninja
+        - osx
+        - clang
+        - arm64
+        
+    variables:
+        HGUILD_PROFILE: macOS-ARM64@Clang@macOS-X86_64@
+        HGUILD_BUILDTYPE: Debug
+    
+    script:
+        - ${HGUILD} install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . --dependenciesOnly ${HGUILD_PROJECT_NAME}@CI
+
+
+
+macOS-ARM64@Clang@macOS-X86_64@~Debug:Build:
+
+    except:
+      - schedules
+
+    needs:
+      - macOS-ARM64@Clang@macOS-X86_64@~Debug:Prepare
+    
+    artifacts:
+        paths:
+        - _HGuild/Build/macOS-ARM64@Clang@macOS-X86_64@/Debug/${HGUILD_PROJECT_NAME}@CI
+            
+    cache:
+        key: "macOS-ARM64@Clang@macOS-X86_64@~Debug"
+        paths:
+        - _HGuild/
+ 
+    stage: build
+    tags:
+        - ninja
+        - osx
+        - clang
+        - arm64
+        
+    variables:
+        HGUILD_PROFILE: macOS-ARM64@Clang@macOS-X86_64@
+        HGUILD_BUILDTYPE: Debug
+
+    script:
+        - ${HGUILD} install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . ${HGUILD_PROJECT_NAME}@CI
+
+
+
+
+
+
+
+macOS-ARM64@Clang@macOS-X86_64@~Debug:Package:
+    only:
+        - tags   # tags are stable
+        - master # master branch we always want the newest ref
+        # TODO? release branches. But we dont want to pickup issue branches.
+
+    # package has no needs - requires everyone to finish the previous stages
+
+    except:
+      - schedules
+
+    artifacts:
+        paths:
+        - _HGuild/Build/macOS-ARM64@Clang@macOS-X86_64@/Debug/${HGUILD_PROJECT_NAME}@CI
+            
+    cache:
+        key: "macOS-ARM64@Clang@macOS-X86_64@~Debug"
+        paths:
+        - _HGuild/
+ 
+    stage: package
+    tags:
+        - ninja
+        - osx
+        - clang
+        - arm64
+        
+    variables:
+        HGUILD_PROFILE: macOS-ARM64@Clang@macOS-X86_64@
+        HGUILD_BUILDTYPE: Debug
+
+    script:
+        - ${HGUILD} source:install:package --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . ${HGUILD_PROJECT_NAME}@CI build.hguildpkg
+        - curl -fsSL 'https://developer.i.hackerguild.com/HGuildCI/hguildCIUpload.rb' | ruby -- - "${HGUILD_PROJECT_NAME}" "${CI_COMMIT_REF_NAME}" "${HGUILD_PROFILE}" "${HGUILD_BUILDTYPE}" build.hguildpkg
+        - rm build.hguildpkg
+
+
+
+
+macOS-ARM64@Clang@macOS-X86_64@~RelWithDebInfo:Prepare:
+
+    except:
+      - schedules
+
+    artifacts:
+        paths:
+        - _HGuild/Build/macOS-ARM64@Clang@macOS-X86_64@/RelWithDebInfo/${HGUILD_PROJECT_NAME}@CI
+        
+    cache:
+        key: "macOS-ARM64@Clang@macOS-X86_64@~RelWithDebInfo"
+        paths:
+        - _HGuild/
+    
+    stage: prepare
+    tags:
+        - ninja
+        - osx
+        - clang
+        - arm64
+        
+    variables:
+        HGUILD_PROFILE: macOS-ARM64@Clang@macOS-X86_64@
+        HGUILD_BUILDTYPE: RelWithDebInfo
+    
+    script:
+        - ${HGUILD} install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . --dependenciesOnly ${HGUILD_PROJECT_NAME}@CI
+
+
+
+macOS-ARM64@Clang@macOS-X86_64@~RelWithDebInfo:Build:
+
+    except:
+      - schedules
+
+    needs:
+      - macOS-ARM64@Clang@macOS-X86_64@~RelWithDebInfo:Prepare
+    
+    artifacts:
+        paths:
+        - _HGuild/Build/macOS-ARM64@Clang@macOS-X86_64@/RelWithDebInfo/${HGUILD_PROJECT_NAME}@CI
+            
+    cache:
+        key: "macOS-ARM64@Clang@macOS-X86_64@~RelWithDebInfo"
+        paths:
+        - _HGuild/
+ 
+    stage: build
+    tags:
+        - ninja
+        - osx
+        - clang
+        - arm64
+        
+    variables:
+        HGUILD_PROFILE: macOS-ARM64@Clang@macOS-X86_64@
+        HGUILD_BUILDTYPE: RelWithDebInfo
+
+    script:
+        - ${HGUILD} install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . ${HGUILD_PROJECT_NAME}@CI
+
+
+
+
+
+
+
+macOS-ARM64@Clang@macOS-X86_64@~RelWithDebInfo:Package:
+    only:
+        - tags   # tags are stable
+        - master # master branch we always want the newest ref
+        # TODO? release branches. But we dont want to pickup issue branches.
+
+    # package has no needs - requires everyone to finish the previous stages
+
+    except:
+      - schedules
+
+    artifacts:
+        paths:
+        - _HGuild/Build/macOS-ARM64@Clang@macOS-X86_64@/RelWithDebInfo/${HGUILD_PROJECT_NAME}@CI
+            
+    cache:
+        key: "macOS-ARM64@Clang@macOS-X86_64@~RelWithDebInfo"
+        paths:
+        - _HGuild/
+ 
+    stage: package
+    tags:
+        - ninja
+        - osx
+        - clang
+        - arm64
+        
+    variables:
+        HGUILD_PROFILE: macOS-ARM64@Clang@macOS-X86_64@
+        HGUILD_BUILDTYPE: RelWithDebInfo
 
     script:
         - ${HGUILD} source:install:package --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . ${HGUILD_PROJECT_NAME}@CI build.hguildpkg
@@ -244,6 +674,7 @@ Scheduler:
     tags:
         - linux
         - docker
+        - x86_64
         
     variables:
         HGUILD_PROFILE: Linux-X86_64@Clang@@
