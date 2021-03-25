@@ -38,14 +38,19 @@ if schedulerJob == "build_docset"
 	
 	project = ENV['HGUILD_PROJECT_NAME']
 	sourceName = ENV['HGUILD_SOURCENAME']
+	hguildProfile = ENV['HGUILD_PROFILE']
+	hguildBuildType = ENV['HGUILD_BUILDTYPE']
 	
 	dateFilename = `date "+%Y-%m-%d_%H-%M-%S"`.strip
 	
-	buildPath = `#{hguild} source:buildPath --buildType #{ENV['HGUILD_BUILDTYPE']} --profile #{ENV['HGUILD_PROFILE']} --customSourceDir='#{rootDir}' #{sourceName}`.strip
+	buildPath = `#{hguild} source:buildPath --buildType #{hguildBuildType} --profile #{hguildProfile} --customSourceDir='#{rootDir}' #{sourceName}`.strip
 	htmlPath = "#{buildPath}/Documentation/Doxygen/html"
 	
 	# we assume we're on linux, ninja, and will be using the normal @CI build.
 	# so order of operations:
+	# - make sure we've generated a build
+	runProcess("#{hguild} install --buildType '#{hguildBuildType}' --profile '#{hguildProfile}' --customSourceDir='#{rootDir}' #{sourceName}")
+
 	# - have cmake run doxygen, generating the html folder
 	runProcess("cmake --build #{buildPath} --target #{CMAKE_TARGET}") or abort ("Unable to run cmake build")
 	

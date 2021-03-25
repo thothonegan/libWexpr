@@ -9,20 +9,39 @@ variables:
     HGUILD_PROJECT_NAME: libWexpr
     HGUILD: _HGuild/Source/HGuild@master/Prefix/hguild
     HGUILD_GIT_USE_HTTPS: 1
+    SAST_EXCLUDED_ANALYZERS: ""
+
+# Note: this is here instead of variables cause gitlab expands it oddly otherwise
+# We blank it out first to prevent upper files (read: osx's keychain helper) from taking over it
+.hguild_setup_git: &hguild_setup_git |-
+    git config --global --replace-all credential.helper ''
+    git config --global --add credential.helper '!f() { sleep 1; echo "username=gitlab-ci-token\npassword=${CI_JOB_TOKEN}"; }; f'
+
+.hguild_setup_hguild: &hguild_setup_hguild |-
+    echo -e "section_start:`date +%s`:hguild_setup[collapsed=true]\r\033[0KHGuild CI Setup"
+    curl -fsSL 'https://developer.i.hackerguild.com/HGuildCI/hguildCISetup.rb' | ruby -- -
+    echo -e "section_end:`date +%s`:hguild_setup\r\033[0K"
+
+.hguild_packages_update: &hguild_packages_update |-
+    echo -e "section_start:`date +%s`:hguild_updating_packages[collapsed=true]\r\033[0KHGuild packages:update"
+    ${HGUILD} packages:update
+    echo -e "section_end:`date +%s`:hguild_updating_packages\r\033[0K"
 
 .hguild_before_script: &hguild_before_script
-    # Note: this is here instead of variables cause gitlab expands it oddly otherwise
-    # We blank it out first to prevent upper files (read: osx's keychain helper) from taking over it
-    - git config --global --replace-all credential.helper ''
-    - git config --global --add credential.helper '!f() { sleep 1; echo "username=gitlab-ci-token\npassword=${CI_JOB_TOKEN}"; }; f'
-    - curl -fsSL 'https://developer.i.hackerguild.com/HGuildCI/hguildCISetup.rb' | ruby -- -
-    - ${HGUILD} packages:update
+    - *hguild_setup_git
+    - *hguild_setup_hguild
+    - *hguild_packages_update
+
+.hguild_before_script_no_packages: &hguild_before_script_no_packages
+    - *hguild_setup_git
+    - *hguild_setup_hguild
 
 stages:
     - prepare
     - build
     - test
     - package
+    - deploy
 
 
 
@@ -33,16 +52,14 @@ Linux-X86_64@Clang@@~Debug:Prepare:
     except:
       - schedules
 
-    artifacts:
-        paths:
-        - _HGuild/Build/Linux-X86_64@Clang@@/Debug/${HGUILD_PROJECT_NAME}@CI
-        
+    # no artifacts - this just caches and makes sure our deps are good
     cache:
         key: "Linux-X86_64@Clang@@~Debug"
         paths:
         - _HGuild/
-    
+
     stage: prepare
+    dependencies: []
     tags:
         - linux
         - docker
@@ -56,7 +73,9 @@ Linux-X86_64@Clang@@~Debug:Prepare:
         - *hguild_before_script
 
     script:
+        - echo -e "section_start:`date +%s`:hguild_install_deps\r\033[0KHGuild Install Deps"
         - ${HGUILD} install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . --dependenciesOnly ${HGUILD_PROJECT_NAME}@CI
+        - echo -e "section_end:`date +%s`:hguild_install_deps\r\033[0K"
 
 
 
@@ -71,7 +90,7 @@ Linux-X86_64@Clang@@~Debug:Build:
     
     artifacts:
         paths:
-        - _HGuild/Build/Linux-X86_64@Clang@@/Debug/${HGUILD_PROJECT_NAME}@CI
+        - _HGuild/Install/Linux-X86_64@Clang@@/Debug/${HGUILD_PROJECT_NAME}@CI
             
     cache:
         key: "Linux-X86_64@Clang@@~Debug"
@@ -79,6 +98,7 @@ Linux-X86_64@Clang@@~Debug:Build:
         - _HGuild/
  
     stage: build
+    dependencies: []
     tags:
         - linux
         - docker
@@ -92,7 +112,9 @@ Linux-X86_64@Clang@@~Debug:Build:
         - *hguild_before_script
 
     script:
+        - echo -e "section_start:`date +%s`:hguild_build_and_install\r\033[0KHGuild Build and Install"
         - ${HGUILD} install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . ${HGUILD_PROJECT_NAME}@CI
+        - echo -e "section_end:`date +%s`:hguild_build_and_install\r\033[0K"
         # For at least eslint, it'll run as a different user, while the CI runs as root
         # thinlto.cache however doesnt allow read access to other users - adjust that just within CI
         - find _HGuild/Build/Linux-X86_64@Clang@@/Debug/${HGUILD_PROJECT_NAME}@CI -name 'thinlto.cache' -exec chmod -Rv o+rx '{}' ';'
@@ -106,21 +128,22 @@ Linux-X86_64@Clang@@~Debug:Build:
 
 Linux-X86_64@Clang@@~Debug:Package:
     image: docker.i.hackerguild.com/hackerguild/hackerguild-gitlabci-docker:latest
-    only:
-        - tags   # tags are stable
-        - master # master branch we always want the newest ref
-        # TODO? release branches. But we dont want to pickup issue branches.
 
-    # package has no needs - requires everyone to finish the previous stages, and all tests to pass
-    # we do want artifacts though from our build
+    variables:
+        HGUILD_PROFILE: Linux-X86_64@Clang@@
+        HGUILD_BUILDTYPE: Debug
+        PACKAGE_NAME: ${HGUILD_PROJECT_NAME}@CI-${HGUILD_PROFILE}_${HGUILD_BUILDTYPE}.hguildpkg
+
     dependencies:
+        - Linux-X86_64@Clang@@~Debug:Build
+    needs:
         - Linux-X86_64@Clang@@~Debug:Build
     except:
       - schedules
 
     artifacts:
         paths:
-        - _HGuild/Build/Linux-X86_64@Clang@@/Debug/${HGUILD_PROJECT_NAME}@CI
+        - ${PACKAGE_NAME}
             
     cache:
         key: "Linux-X86_64@Clang@@~Debug"
@@ -132,19 +155,60 @@ Linux-X86_64@Clang@@~Debug:Package:
         - linux
         - docker
         - x86_64
-        
+    
+    before_script:
+        - *hguild_before_script_no_packages
+
+    script:
+        - echo -e "section_start:`date +%s`:hguild_package\r\033[0KHGuild Package"
+        - ${HGUILD} source:install:package --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . ${HGUILD_PROJECT_NAME}@CI ${PACKAGE_NAME}
+        - echo -e "section_end:`date +%s`:hguild_package\r\033[0K"
+
+
+
+Linux-X86_64@Clang@@~Debug:Deploy:
+    image: docker.i.hackerguild.com/hackerguild/hackerguild-gitlabci-docker:latest
+    only:
+        - tags   # tags are stable
+        - master # master branch we always want the newest ref
+        # TODO? release branches. But we dont want to pickup issue branches.
+
+    # package has no needs - requires everyone to finish the previous stages, and all tests to pass
+    # we do want artifacts though from our build
+    dependencies:
+        - Linux-X86_64@Clang@@~Debug:Package
+    except:
+        - schedules
+
     variables:
         HGUILD_PROFILE: Linux-X86_64@Clang@@
         HGUILD_BUILDTYPE: Debug
+        PACKAGE_NAME: ${HGUILD_PROJECT_NAME}@CI-${HGUILD_PROFILE}_${HGUILD_BUILDTYPE}.hguildpkg
 
-    before_script:
-        - *hguild_before_script
+    artifacts:
+        paths:
+        - ${PACKAGE_NAME}
+            
+    cache:
+        key: "Linux-X86_64@Clang@@~Debug"
+        paths:
+        - _HGuild/
+
+    stage: deploy
+    tags:
+        - linux
+        - docker
+        - x86_64
+    
+    # nothing to run - we literally just need the one file
+    before_script: []
 
     script:
-        - ${HGUILD} source:install:package --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . ${HGUILD_PROJECT_NAME}@CI build.hguildpkg
-        - curl -fsSL 'https://developer.i.hackerguild.com/HGuildCI/hguildCIUpload.rb' | ruby -- - "${HGUILD_PROJECT_NAME}" "${CI_COMMIT_REF_NAME}" "${HGUILD_PROFILE}" "${HGUILD_BUILDTYPE}" build.hguildpkg
-        - rm build.hguildpkg
-
+        - echo -e "section_start:`date +%s`:upload_package\r\033[0KUpload Package"
+        - curl -fsSL 'https://developer.i.hackerguild.com/HGuildCI/hguildCIUpload.rb' | ruby -- - "${HGUILD_PROJECT_NAME}" "${CI_COMMIT_REF_NAME}" "${HGUILD_PROFILE}" "${HGUILD_BUILDTYPE}" ${PACKAGE_NAME}
+        - echo -e "section_end:`date +%s`:upload_package\r\033[0K"
+        
+        
 
 
 
@@ -154,16 +218,14 @@ Linux-X86_64@Clang@@~Release:Prepare:
     except:
       - schedules
 
-    artifacts:
-        paths:
-        - _HGuild/Build/Linux-X86_64@Clang@@/Release/${HGUILD_PROJECT_NAME}@CI
-        
+    # no artifacts - this just caches and makes sure our deps are good
     cache:
         key: "Linux-X86_64@Clang@@~Release"
         paths:
         - _HGuild/
-    
+
     stage: prepare
+    dependencies: []
     tags:
         - linux
         - docker
@@ -177,7 +239,9 @@ Linux-X86_64@Clang@@~Release:Prepare:
         - *hguild_before_script
 
     script:
+        - echo -e "section_start:`date +%s`:hguild_install_deps\r\033[0KHGuild Install Deps"
         - ${HGUILD} install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . --dependenciesOnly ${HGUILD_PROJECT_NAME}@CI
+        - echo -e "section_end:`date +%s`:hguild_install_deps\r\033[0K"
 
 
 
@@ -192,7 +256,7 @@ Linux-X86_64@Clang@@~Release:Build:
     
     artifacts:
         paths:
-        - _HGuild/Build/Linux-X86_64@Clang@@/Release/${HGUILD_PROJECT_NAME}@CI
+        - _HGuild/Install/Linux-X86_64@Clang@@/Release/${HGUILD_PROJECT_NAME}@CI
             
     cache:
         key: "Linux-X86_64@Clang@@~Release"
@@ -200,6 +264,7 @@ Linux-X86_64@Clang@@~Release:Build:
         - _HGuild/
  
     stage: build
+    dependencies: []
     tags:
         - linux
         - docker
@@ -213,7 +278,9 @@ Linux-X86_64@Clang@@~Release:Build:
         - *hguild_before_script
 
     script:
+        - echo -e "section_start:`date +%s`:hguild_build_and_install\r\033[0KHGuild Build and Install"
         - ${HGUILD} install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . ${HGUILD_PROJECT_NAME}@CI
+        - echo -e "section_end:`date +%s`:hguild_build_and_install\r\033[0K"
         # For at least eslint, it'll run as a different user, while the CI runs as root
         # thinlto.cache however doesnt allow read access to other users - adjust that just within CI
         - find _HGuild/Build/Linux-X86_64@Clang@@/Release/${HGUILD_PROJECT_NAME}@CI -name 'thinlto.cache' -exec chmod -Rv o+rx '{}' ';'
@@ -227,21 +294,22 @@ Linux-X86_64@Clang@@~Release:Build:
 
 Linux-X86_64@Clang@@~Release:Package:
     image: docker.i.hackerguild.com/hackerguild/hackerguild-gitlabci-docker:latest
-    only:
-        - tags   # tags are stable
-        - master # master branch we always want the newest ref
-        # TODO? release branches. But we dont want to pickup issue branches.
 
-    # package has no needs - requires everyone to finish the previous stages, and all tests to pass
-    # we do want artifacts though from our build
+    variables:
+        HGUILD_PROFILE: Linux-X86_64@Clang@@
+        HGUILD_BUILDTYPE: Release
+        PACKAGE_NAME: ${HGUILD_PROJECT_NAME}@CI-${HGUILD_PROFILE}_${HGUILD_BUILDTYPE}.hguildpkg
+
     dependencies:
+        - Linux-X86_64@Clang@@~Release:Build
+    needs:
         - Linux-X86_64@Clang@@~Release:Build
     except:
       - schedules
 
     artifacts:
         paths:
-        - _HGuild/Build/Linux-X86_64@Clang@@/Release/${HGUILD_PROJECT_NAME}@CI
+        - ${PACKAGE_NAME}
             
     cache:
         key: "Linux-X86_64@Clang@@~Release"
@@ -253,19 +321,61 @@ Linux-X86_64@Clang@@~Release:Package:
         - linux
         - docker
         - x86_64
-        
+    
+    before_script:
+        - *hguild_before_script_no_packages
+
+    script:
+        - echo -e "section_start:`date +%s`:hguild_package\r\033[0KHGuild Package"
+        - ${HGUILD} source:install:package --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . ${HGUILD_PROJECT_NAME}@CI ${PACKAGE_NAME}
+        - echo -e "section_end:`date +%s`:hguild_package\r\033[0K"
+
+
+
+Linux-X86_64@Clang@@~Release:Deploy:
+    image: docker.i.hackerguild.com/hackerguild/hackerguild-gitlabci-docker:latest
+    only:
+        - tags   # tags are stable
+        - master # master branch we always want the newest ref
+        # TODO? release branches. But we dont want to pickup issue branches.
+
+    # package has no needs - requires everyone to finish the previous stages, and all tests to pass
+    # we do want artifacts though from our build
+    dependencies:
+        - Linux-X86_64@Clang@@~Release:Package
+    except:
+        - schedules
+
     variables:
         HGUILD_PROFILE: Linux-X86_64@Clang@@
         HGUILD_BUILDTYPE: Release
+        PACKAGE_NAME: ${HGUILD_PROJECT_NAME}@CI-${HGUILD_PROFILE}_${HGUILD_BUILDTYPE}.hguildpkg
 
-    before_script:
-        - *hguild_before_script
+    artifacts:
+        paths:
+        - ${PACKAGE_NAME}
+            
+    cache:
+        key: "Linux-X86_64@Clang@@~Release"
+        paths:
+        - _HGuild/
+
+    stage: deploy
+    tags:
+        - linux
+        - docker
+        - x86_64
+    
+    # nothing to run - we literally just need the one file
+    before_script: []
 
     script:
-        - ${HGUILD} source:install:package --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . ${HGUILD_PROJECT_NAME}@CI build.hguildpkg
-        - curl -fsSL 'https://developer.i.hackerguild.com/HGuildCI/hguildCIUpload.rb' | ruby -- - "${HGUILD_PROJECT_NAME}" "${CI_COMMIT_REF_NAME}" "${HGUILD_PROFILE}" "${HGUILD_BUILDTYPE}" build.hguildpkg
-        - rm build.hguildpkg
-
+        - echo -e "section_start:`date +%s`:upload_package\r\033[0KUpload Package"
+        - curl -fsSL 'https://developer.i.hackerguild.com/HGuildCI/hguildCIUpload.rb' | ruby -- - "${HGUILD_PROJECT_NAME}" "${CI_COMMIT_REF_NAME}" "${HGUILD_PROFILE}" "${HGUILD_BUILDTYPE}" ${PACKAGE_NAME}
+        - echo -e "section_end:`date +%s`:upload_package\r\033[0K"
+        
+        
+ 
 
 
 
@@ -274,16 +384,14 @@ macOS-ARM64@Clang@@~Debug:Prepare:
     except:
       - schedules
 
-    artifacts:
-        paths:
-        - _HGuild/Build/macOS-ARM64@Clang@@/Debug/${HGUILD_PROJECT_NAME}@CI
-        
+    # no artifacts - this just caches and makes sure our deps are good
     cache:
         key: "macOS-ARM64@Clang@@~Debug"
         paths:
         - _HGuild/
-    
+
     stage: prepare
+    dependencies: []
     tags:
         - ninja
         - osx
@@ -298,7 +406,9 @@ macOS-ARM64@Clang@@~Debug:Prepare:
         - *hguild_before_script
 
     script:
+        - echo -e "section_start:`date +%s`:hguild_install_deps\r\033[0KHGuild Install Deps"
         - ${HGUILD} install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . --dependenciesOnly ${HGUILD_PROJECT_NAME}@CI
+        - echo -e "section_end:`date +%s`:hguild_install_deps\r\033[0K"
 
 
 
@@ -312,7 +422,7 @@ macOS-ARM64@Clang@@~Debug:Build:
     
     artifacts:
         paths:
-        - _HGuild/Build/macOS-ARM64@Clang@@/Debug/${HGUILD_PROJECT_NAME}@CI
+        - _HGuild/Install/macOS-ARM64@Clang@@/Debug/${HGUILD_PROJECT_NAME}@CI
             
     cache:
         key: "macOS-ARM64@Clang@@~Debug"
@@ -320,6 +430,7 @@ macOS-ARM64@Clang@@~Debug:Build:
         - _HGuild/
  
     stage: build
+    dependencies: []
     tags:
         - ninja
         - osx
@@ -334,7 +445,9 @@ macOS-ARM64@Clang@@~Debug:Build:
         - *hguild_before_script
 
     script:
+        - echo -e "section_start:`date +%s`:hguild_build_and_install\r\033[0KHGuild Build and Install"
         - ${HGUILD} install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . ${HGUILD_PROJECT_NAME}@CI
+        - echo -e "section_end:`date +%s`:hguild_build_and_install\r\033[0K"
         # For at least eslint, it'll run as a different user, while the CI runs as root
         # thinlto.cache however doesnt allow read access to other users - adjust that just within CI
         - find _HGuild/Build/macOS-ARM64@Clang@@/Debug/${HGUILD_PROJECT_NAME}@CI -name 'thinlto.cache' -exec chmod -Rv o+rx '{}' ';'
@@ -347,21 +460,22 @@ macOS-ARM64@Clang@@~Debug:Build:
 
 
 macOS-ARM64@Clang@@~Debug:Package:
-    only:
-        - tags   # tags are stable
-        - master # master branch we always want the newest ref
-        # TODO? release branches. But we dont want to pickup issue branches.
 
-    # package has no needs - requires everyone to finish the previous stages, and all tests to pass
-    # we do want artifacts though from our build
+    variables:
+        HGUILD_PROFILE: macOS-ARM64@Clang@@
+        HGUILD_BUILDTYPE: Debug
+        PACKAGE_NAME: ${HGUILD_PROJECT_NAME}@CI-${HGUILD_PROFILE}_${HGUILD_BUILDTYPE}.hguildpkg
+
     dependencies:
+        - macOS-ARM64@Clang@@~Debug:Build
+    needs:
         - macOS-ARM64@Clang@@~Debug:Build
     except:
       - schedules
 
     artifacts:
         paths:
-        - _HGuild/Build/macOS-ARM64@Clang@@/Debug/${HGUILD_PROJECT_NAME}@CI
+        - ${PACKAGE_NAME}
             
     cache:
         key: "macOS-ARM64@Clang@@~Debug"
@@ -374,19 +488,60 @@ macOS-ARM64@Clang@@~Debug:Package:
         - osx
         - clang
         - arm64
-        
+    
+    before_script:
+        - *hguild_before_script_no_packages
+
+    script:
+        - echo -e "section_start:`date +%s`:hguild_package\r\033[0KHGuild Package"
+        - ${HGUILD} source:install:package --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . ${HGUILD_PROJECT_NAME}@CI ${PACKAGE_NAME}
+        - echo -e "section_end:`date +%s`:hguild_package\r\033[0K"
+
+
+
+macOS-ARM64@Clang@@~Debug:Deploy:
+    only:
+        - tags   # tags are stable
+        - master # master branch we always want the newest ref
+        # TODO? release branches. But we dont want to pickup issue branches.
+
+    # package has no needs - requires everyone to finish the previous stages, and all tests to pass
+    # we do want artifacts though from our build
+    dependencies:
+        - macOS-ARM64@Clang@@~Debug:Package
+    except:
+        - schedules
+
     variables:
         HGUILD_PROFILE: macOS-ARM64@Clang@@
         HGUILD_BUILDTYPE: Debug
+        PACKAGE_NAME: ${HGUILD_PROJECT_NAME}@CI-${HGUILD_PROFILE}_${HGUILD_BUILDTYPE}.hguildpkg
 
-    before_script:
-        - *hguild_before_script
+    artifacts:
+        paths:
+        - ${PACKAGE_NAME}
+            
+    cache:
+        key: "macOS-ARM64@Clang@@~Debug"
+        paths:
+        - _HGuild/
+
+    stage: deploy
+    tags:
+        - ninja
+        - osx
+        - clang
+        - arm64
+    
+    # nothing to run - we literally just need the one file
+    before_script: []
 
     script:
-        - ${HGUILD} source:install:package --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . ${HGUILD_PROJECT_NAME}@CI build.hguildpkg
-        - curl -fsSL 'https://developer.i.hackerguild.com/HGuildCI/hguildCIUpload.rb' | ruby -- - "${HGUILD_PROJECT_NAME}" "${CI_COMMIT_REF_NAME}" "${HGUILD_PROFILE}" "${HGUILD_BUILDTYPE}" build.hguildpkg
-        - rm build.hguildpkg
-
+        - echo -e "section_start:`date +%s`:upload_package\r\033[0KUpload Package"
+        - curl -fsSL 'https://developer.i.hackerguild.com/HGuildCI/hguildCIUpload.rb' | ruby -- - "${HGUILD_PROJECT_NAME}" "${CI_COMMIT_REF_NAME}" "${HGUILD_PROFILE}" "${HGUILD_BUILDTYPE}" ${PACKAGE_NAME}
+        - echo -e "section_end:`date +%s`:upload_package\r\033[0K"
+        
+        
 
 
 
@@ -395,16 +550,14 @@ macOS-ARM64@Clang@@~RelWithDebInfo:Prepare:
     except:
       - schedules
 
-    artifacts:
-        paths:
-        - _HGuild/Build/macOS-ARM64@Clang@@/RelWithDebInfo/${HGUILD_PROJECT_NAME}@CI
-        
+    # no artifacts - this just caches and makes sure our deps are good
     cache:
         key: "macOS-ARM64@Clang@@~RelWithDebInfo"
         paths:
         - _HGuild/
-    
+
     stage: prepare
+    dependencies: []
     tags:
         - ninja
         - osx
@@ -419,7 +572,9 @@ macOS-ARM64@Clang@@~RelWithDebInfo:Prepare:
         - *hguild_before_script
 
     script:
+        - echo -e "section_start:`date +%s`:hguild_install_deps\r\033[0KHGuild Install Deps"
         - ${HGUILD} install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . --dependenciesOnly ${HGUILD_PROJECT_NAME}@CI
+        - echo -e "section_end:`date +%s`:hguild_install_deps\r\033[0K"
 
 
 
@@ -433,7 +588,7 @@ macOS-ARM64@Clang@@~RelWithDebInfo:Build:
     
     artifacts:
         paths:
-        - _HGuild/Build/macOS-ARM64@Clang@@/RelWithDebInfo/${HGUILD_PROJECT_NAME}@CI
+        - _HGuild/Install/macOS-ARM64@Clang@@/RelWithDebInfo/${HGUILD_PROJECT_NAME}@CI
             
     cache:
         key: "macOS-ARM64@Clang@@~RelWithDebInfo"
@@ -441,6 +596,7 @@ macOS-ARM64@Clang@@~RelWithDebInfo:Build:
         - _HGuild/
  
     stage: build
+    dependencies: []
     tags:
         - ninja
         - osx
@@ -455,7 +611,9 @@ macOS-ARM64@Clang@@~RelWithDebInfo:Build:
         - *hguild_before_script
 
     script:
+        - echo -e "section_start:`date +%s`:hguild_build_and_install\r\033[0KHGuild Build and Install"
         - ${HGUILD} install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . ${HGUILD_PROJECT_NAME}@CI
+        - echo -e "section_end:`date +%s`:hguild_build_and_install\r\033[0K"
         # For at least eslint, it'll run as a different user, while the CI runs as root
         # thinlto.cache however doesnt allow read access to other users - adjust that just within CI
         - find _HGuild/Build/macOS-ARM64@Clang@@/RelWithDebInfo/${HGUILD_PROJECT_NAME}@CI -name 'thinlto.cache' -exec chmod -Rv o+rx '{}' ';'
@@ -468,21 +626,22 @@ macOS-ARM64@Clang@@~RelWithDebInfo:Build:
 
 
 macOS-ARM64@Clang@@~RelWithDebInfo:Package:
-    only:
-        - tags   # tags are stable
-        - master # master branch we always want the newest ref
-        # TODO? release branches. But we dont want to pickup issue branches.
 
-    # package has no needs - requires everyone to finish the previous stages, and all tests to pass
-    # we do want artifacts though from our build
+    variables:
+        HGUILD_PROFILE: macOS-ARM64@Clang@@
+        HGUILD_BUILDTYPE: RelWithDebInfo
+        PACKAGE_NAME: ${HGUILD_PROJECT_NAME}@CI-${HGUILD_PROFILE}_${HGUILD_BUILDTYPE}.hguildpkg
+
     dependencies:
+        - macOS-ARM64@Clang@@~RelWithDebInfo:Build
+    needs:
         - macOS-ARM64@Clang@@~RelWithDebInfo:Build
     except:
       - schedules
 
     artifacts:
         paths:
-        - _HGuild/Build/macOS-ARM64@Clang@@/RelWithDebInfo/${HGUILD_PROJECT_NAME}@CI
+        - ${PACKAGE_NAME}
             
     cache:
         key: "macOS-ARM64@Clang@@~RelWithDebInfo"
@@ -495,19 +654,61 @@ macOS-ARM64@Clang@@~RelWithDebInfo:Package:
         - osx
         - clang
         - arm64
-        
+    
+    before_script:
+        - *hguild_before_script_no_packages
+
+    script:
+        - echo -e "section_start:`date +%s`:hguild_package\r\033[0KHGuild Package"
+        - ${HGUILD} source:install:package --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . ${HGUILD_PROJECT_NAME}@CI ${PACKAGE_NAME}
+        - echo -e "section_end:`date +%s`:hguild_package\r\033[0K"
+
+
+
+macOS-ARM64@Clang@@~RelWithDebInfo:Deploy:
+    only:
+        - tags   # tags are stable
+        - master # master branch we always want the newest ref
+        # TODO? release branches. But we dont want to pickup issue branches.
+
+    # package has no needs - requires everyone to finish the previous stages, and all tests to pass
+    # we do want artifacts though from our build
+    dependencies:
+        - macOS-ARM64@Clang@@~RelWithDebInfo:Package
+    except:
+        - schedules
+
     variables:
         HGUILD_PROFILE: macOS-ARM64@Clang@@
         HGUILD_BUILDTYPE: RelWithDebInfo
+        PACKAGE_NAME: ${HGUILD_PROJECT_NAME}@CI-${HGUILD_PROFILE}_${HGUILD_BUILDTYPE}.hguildpkg
 
-    before_script:
-        - *hguild_before_script
+    artifacts:
+        paths:
+        - ${PACKAGE_NAME}
+            
+    cache:
+        key: "macOS-ARM64@Clang@@~RelWithDebInfo"
+        paths:
+        - _HGuild/
+
+    stage: deploy
+    tags:
+        - ninja
+        - osx
+        - clang
+        - arm64
+    
+    # nothing to run - we literally just need the one file
+    before_script: []
 
     script:
-        - ${HGUILD} source:install:package --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . ${HGUILD_PROJECT_NAME}@CI build.hguildpkg
-        - curl -fsSL 'https://developer.i.hackerguild.com/HGuildCI/hguildCIUpload.rb' | ruby -- - "${HGUILD_PROJECT_NAME}" "${CI_COMMIT_REF_NAME}" "${HGUILD_PROFILE}" "${HGUILD_BUILDTYPE}" build.hguildpkg
-        - rm build.hguildpkg
-
+        - echo -e "section_start:`date +%s`:upload_package\r\033[0KUpload Package"
+        - curl -fsSL 'https://developer.i.hackerguild.com/HGuildCI/hguildCIUpload.rb' | ruby -- - "${HGUILD_PROJECT_NAME}" "${CI_COMMIT_REF_NAME}" "${HGUILD_PROFILE}" "${HGUILD_BUILDTYPE}" ${PACKAGE_NAME}
+        - echo -e "section_end:`date +%s`:upload_package\r\033[0K"
+        
+        
+ 
 
 
 
@@ -516,16 +717,14 @@ macOS-ARM64@Clang@macOS-X86_64@~Debug:Prepare:
     except:
       - schedules
 
-    artifacts:
-        paths:
-        - _HGuild/Build/macOS-ARM64@Clang@macOS-X86_64@/Debug/${HGUILD_PROJECT_NAME}@CI
-        
+    # no artifacts - this just caches and makes sure our deps are good
     cache:
         key: "macOS-ARM64@Clang@macOS-X86_64@~Debug"
         paths:
         - _HGuild/
-    
+
     stage: prepare
+    dependencies: []
     tags:
         - ninja
         - osx
@@ -540,7 +739,9 @@ macOS-ARM64@Clang@macOS-X86_64@~Debug:Prepare:
         - *hguild_before_script
 
     script:
+        - echo -e "section_start:`date +%s`:hguild_install_deps\r\033[0KHGuild Install Deps"
         - ${HGUILD} install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . --dependenciesOnly ${HGUILD_PROJECT_NAME}@CI
+        - echo -e "section_end:`date +%s`:hguild_install_deps\r\033[0K"
 
 
 
@@ -554,7 +755,7 @@ macOS-ARM64@Clang@macOS-X86_64@~Debug:Build:
     
     artifacts:
         paths:
-        - _HGuild/Build/macOS-ARM64@Clang@macOS-X86_64@/Debug/${HGUILD_PROJECT_NAME}@CI
+        - _HGuild/Install/macOS-ARM64@Clang@macOS-X86_64@/Debug/${HGUILD_PROJECT_NAME}@CI
             
     cache:
         key: "macOS-ARM64@Clang@macOS-X86_64@~Debug"
@@ -562,6 +763,7 @@ macOS-ARM64@Clang@macOS-X86_64@~Debug:Build:
         - _HGuild/
  
     stage: build
+    dependencies: []
     tags:
         - ninja
         - osx
@@ -576,7 +778,9 @@ macOS-ARM64@Clang@macOS-X86_64@~Debug:Build:
         - *hguild_before_script
 
     script:
+        - echo -e "section_start:`date +%s`:hguild_build_and_install\r\033[0KHGuild Build and Install"
         - ${HGUILD} install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . ${HGUILD_PROJECT_NAME}@CI
+        - echo -e "section_end:`date +%s`:hguild_build_and_install\r\033[0K"
         # For at least eslint, it'll run as a different user, while the CI runs as root
         # thinlto.cache however doesnt allow read access to other users - adjust that just within CI
         - find _HGuild/Build/macOS-ARM64@Clang@macOS-X86_64@/Debug/${HGUILD_PROJECT_NAME}@CI -name 'thinlto.cache' -exec chmod -Rv o+rx '{}' ';'
@@ -589,21 +793,22 @@ macOS-ARM64@Clang@macOS-X86_64@~Debug:Build:
 
 
 macOS-ARM64@Clang@macOS-X86_64@~Debug:Package:
-    only:
-        - tags   # tags are stable
-        - master # master branch we always want the newest ref
-        # TODO? release branches. But we dont want to pickup issue branches.
 
-    # package has no needs - requires everyone to finish the previous stages, and all tests to pass
-    # we do want artifacts though from our build
+    variables:
+        HGUILD_PROFILE: macOS-ARM64@Clang@macOS-X86_64@
+        HGUILD_BUILDTYPE: Debug
+        PACKAGE_NAME: ${HGUILD_PROJECT_NAME}@CI-${HGUILD_PROFILE}_${HGUILD_BUILDTYPE}.hguildpkg
+
     dependencies:
+        - macOS-ARM64@Clang@macOS-X86_64@~Debug:Build
+    needs:
         - macOS-ARM64@Clang@macOS-X86_64@~Debug:Build
     except:
       - schedules
 
     artifacts:
         paths:
-        - _HGuild/Build/macOS-ARM64@Clang@macOS-X86_64@/Debug/${HGUILD_PROJECT_NAME}@CI
+        - ${PACKAGE_NAME}
             
     cache:
         key: "macOS-ARM64@Clang@macOS-X86_64@~Debug"
@@ -616,19 +821,60 @@ macOS-ARM64@Clang@macOS-X86_64@~Debug:Package:
         - osx
         - clang
         - arm64
-        
+    
+    before_script:
+        - *hguild_before_script_no_packages
+
+    script:
+        - echo -e "section_start:`date +%s`:hguild_package\r\033[0KHGuild Package"
+        - ${HGUILD} source:install:package --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . ${HGUILD_PROJECT_NAME}@CI ${PACKAGE_NAME}
+        - echo -e "section_end:`date +%s`:hguild_package\r\033[0K"
+
+
+
+macOS-ARM64@Clang@macOS-X86_64@~Debug:Deploy:
+    only:
+        - tags   # tags are stable
+        - master # master branch we always want the newest ref
+        # TODO? release branches. But we dont want to pickup issue branches.
+
+    # package has no needs - requires everyone to finish the previous stages, and all tests to pass
+    # we do want artifacts though from our build
+    dependencies:
+        - macOS-ARM64@Clang@macOS-X86_64@~Debug:Package
+    except:
+        - schedules
+
     variables:
         HGUILD_PROFILE: macOS-ARM64@Clang@macOS-X86_64@
         HGUILD_BUILDTYPE: Debug
+        PACKAGE_NAME: ${HGUILD_PROJECT_NAME}@CI-${HGUILD_PROFILE}_${HGUILD_BUILDTYPE}.hguildpkg
 
-    before_script:
-        - *hguild_before_script
+    artifacts:
+        paths:
+        - ${PACKAGE_NAME}
+            
+    cache:
+        key: "macOS-ARM64@Clang@macOS-X86_64@~Debug"
+        paths:
+        - _HGuild/
+
+    stage: deploy
+    tags:
+        - ninja
+        - osx
+        - clang
+        - arm64
+    
+    # nothing to run - we literally just need the one file
+    before_script: []
 
     script:
-        - ${HGUILD} source:install:package --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . ${HGUILD_PROJECT_NAME}@CI build.hguildpkg
-        - curl -fsSL 'https://developer.i.hackerguild.com/HGuildCI/hguildCIUpload.rb' | ruby -- - "${HGUILD_PROJECT_NAME}" "${CI_COMMIT_REF_NAME}" "${HGUILD_PROFILE}" "${HGUILD_BUILDTYPE}" build.hguildpkg
-        - rm build.hguildpkg
-
+        - echo -e "section_start:`date +%s`:upload_package\r\033[0KUpload Package"
+        - curl -fsSL 'https://developer.i.hackerguild.com/HGuildCI/hguildCIUpload.rb' | ruby -- - "${HGUILD_PROJECT_NAME}" "${CI_COMMIT_REF_NAME}" "${HGUILD_PROFILE}" "${HGUILD_BUILDTYPE}" ${PACKAGE_NAME}
+        - echo -e "section_end:`date +%s`:upload_package\r\033[0K"
+        
+        
 
 
 
@@ -637,16 +883,14 @@ macOS-ARM64@Clang@macOS-X86_64@~RelWithDebInfo:Prepare:
     except:
       - schedules
 
-    artifacts:
-        paths:
-        - _HGuild/Build/macOS-ARM64@Clang@macOS-X86_64@/RelWithDebInfo/${HGUILD_PROJECT_NAME}@CI
-        
+    # no artifacts - this just caches and makes sure our deps are good
     cache:
         key: "macOS-ARM64@Clang@macOS-X86_64@~RelWithDebInfo"
         paths:
         - _HGuild/
-    
+
     stage: prepare
+    dependencies: []
     tags:
         - ninja
         - osx
@@ -661,7 +905,9 @@ macOS-ARM64@Clang@macOS-X86_64@~RelWithDebInfo:Prepare:
         - *hguild_before_script
 
     script:
+        - echo -e "section_start:`date +%s`:hguild_install_deps\r\033[0KHGuild Install Deps"
         - ${HGUILD} install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . --dependenciesOnly ${HGUILD_PROJECT_NAME}@CI
+        - echo -e "section_end:`date +%s`:hguild_install_deps\r\033[0K"
 
 
 
@@ -675,7 +921,7 @@ macOS-ARM64@Clang@macOS-X86_64@~RelWithDebInfo:Build:
     
     artifacts:
         paths:
-        - _HGuild/Build/macOS-ARM64@Clang@macOS-X86_64@/RelWithDebInfo/${HGUILD_PROJECT_NAME}@CI
+        - _HGuild/Install/macOS-ARM64@Clang@macOS-X86_64@/RelWithDebInfo/${HGUILD_PROJECT_NAME}@CI
             
     cache:
         key: "macOS-ARM64@Clang@macOS-X86_64@~RelWithDebInfo"
@@ -683,6 +929,7 @@ macOS-ARM64@Clang@macOS-X86_64@~RelWithDebInfo:Build:
         - _HGuild/
  
     stage: build
+    dependencies: []
     tags:
         - ninja
         - osx
@@ -697,7 +944,9 @@ macOS-ARM64@Clang@macOS-X86_64@~RelWithDebInfo:Build:
         - *hguild_before_script
 
     script:
+        - echo -e "section_start:`date +%s`:hguild_build_and_install\r\033[0KHGuild Build and Install"
         - ${HGUILD} install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . ${HGUILD_PROJECT_NAME}@CI
+        - echo -e "section_end:`date +%s`:hguild_build_and_install\r\033[0K"
         # For at least eslint, it'll run as a different user, while the CI runs as root
         # thinlto.cache however doesnt allow read access to other users - adjust that just within CI
         - find _HGuild/Build/macOS-ARM64@Clang@macOS-X86_64@/RelWithDebInfo/${HGUILD_PROJECT_NAME}@CI -name 'thinlto.cache' -exec chmod -Rv o+rx '{}' ';'
@@ -710,21 +959,22 @@ macOS-ARM64@Clang@macOS-X86_64@~RelWithDebInfo:Build:
 
 
 macOS-ARM64@Clang@macOS-X86_64@~RelWithDebInfo:Package:
-    only:
-        - tags   # tags are stable
-        - master # master branch we always want the newest ref
-        # TODO? release branches. But we dont want to pickup issue branches.
 
-    # package has no needs - requires everyone to finish the previous stages, and all tests to pass
-    # we do want artifacts though from our build
+    variables:
+        HGUILD_PROFILE: macOS-ARM64@Clang@macOS-X86_64@
+        HGUILD_BUILDTYPE: RelWithDebInfo
+        PACKAGE_NAME: ${HGUILD_PROJECT_NAME}@CI-${HGUILD_PROFILE}_${HGUILD_BUILDTYPE}.hguildpkg
+
     dependencies:
+        - macOS-ARM64@Clang@macOS-X86_64@~RelWithDebInfo:Build
+    needs:
         - macOS-ARM64@Clang@macOS-X86_64@~RelWithDebInfo:Build
     except:
       - schedules
 
     artifacts:
         paths:
-        - _HGuild/Build/macOS-ARM64@Clang@macOS-X86_64@/RelWithDebInfo/${HGUILD_PROJECT_NAME}@CI
+        - ${PACKAGE_NAME}
             
     cache:
         key: "macOS-ARM64@Clang@macOS-X86_64@~RelWithDebInfo"
@@ -737,19 +987,62 @@ macOS-ARM64@Clang@macOS-X86_64@~RelWithDebInfo:Package:
         - osx
         - clang
         - arm64
-        
+    
+    before_script:
+        - *hguild_before_script_no_packages
+
+    script:
+        - echo -e "section_start:`date +%s`:hguild_package\r\033[0KHGuild Package"
+        - ${HGUILD} source:install:package --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . ${HGUILD_PROJECT_NAME}@CI ${PACKAGE_NAME}
+        - echo -e "section_end:`date +%s`:hguild_package\r\033[0K"
+
+
+
+macOS-ARM64@Clang@macOS-X86_64@~RelWithDebInfo:Deploy:
+    only:
+        - tags   # tags are stable
+        - master # master branch we always want the newest ref
+        # TODO? release branches. But we dont want to pickup issue branches.
+
+    # package has no needs - requires everyone to finish the previous stages, and all tests to pass
+    # we do want artifacts though from our build
+    dependencies:
+        - macOS-ARM64@Clang@macOS-X86_64@~RelWithDebInfo:Package
+    except:
+        - schedules
+
     variables:
         HGUILD_PROFILE: macOS-ARM64@Clang@macOS-X86_64@
         HGUILD_BUILDTYPE: RelWithDebInfo
+        PACKAGE_NAME: ${HGUILD_PROJECT_NAME}@CI-${HGUILD_PROFILE}_${HGUILD_BUILDTYPE}.hguildpkg
 
-    before_script:
-        - *hguild_before_script
+    artifacts:
+        paths:
+        - ${PACKAGE_NAME}
+            
+    cache:
+        key: "macOS-ARM64@Clang@macOS-X86_64@~RelWithDebInfo"
+        paths:
+        - _HGuild/
+
+    stage: deploy
+    tags:
+        - ninja
+        - osx
+        - clang
+        - arm64
+    
+    # nothing to run - we literally just need the one file
+    before_script: []
 
     script:
-        - ${HGUILD} source:install:package --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . ${HGUILD_PROJECT_NAME}@CI build.hguildpkg
-        - curl -fsSL 'https://developer.i.hackerguild.com/HGuildCI/hguildCIUpload.rb' | ruby -- - "${HGUILD_PROJECT_NAME}" "${CI_COMMIT_REF_NAME}" "${HGUILD_PROFILE}" "${HGUILD_BUILDTYPE}" build.hguildpkg
-        - rm build.hguildpkg
-
+        - echo -e "section_start:`date +%s`:upload_package\r\033[0KUpload Package"
+        - curl -fsSL 'https://developer.i.hackerguild.com/HGuildCI/hguildCIUpload.rb' | ruby -- - "${HGUILD_PROJECT_NAME}" "${CI_COMMIT_REF_NAME}" "${HGUILD_PROFILE}" "${HGUILD_BUILDTYPE}" ${PACKAGE_NAME}
+        - echo -e "section_end:`date +%s`:upload_package\r\033[0K"
+        
+        
+ 
+ 
 
 
 Scheduler:
@@ -778,5 +1071,7 @@ Scheduler:
         - *hguild_before_script
     
     script:
+      - echo -e "section_start:`date +%s`:run_scheduler\r\033[0KRun Scheduler"
       - Support/gitlabScheduler.rb
+      - echo -e "section_end:`date +%s`:run_scheduler\r\033[0K"
 
