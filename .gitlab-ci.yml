@@ -1082,13 +1082,12 @@ CodeQualityClangTidy:
     image: docker.i.hackerguild.com/hackerguild/hackerguild-gitlabci-docker:latest
 
     cache:
-        key: "Linux-X86_64@Clang@@"
+        key: "Linux-X86_64@Clang@@~Debug"
         paths:
         - _HGuild/
 
     stage: test
 
-    # we need prepare, cause we need Catalyst
     needs:
       - Linux-X86_64@Clang@@~Debug:Build
       
@@ -1097,7 +1096,10 @@ CodeQualityClangTidy:
 
     artifacts:
         reports:
-            codequality: "codequality-clangtidy.json"
+          codequality: "codequality-clangtidy.json"
+        paths:
+          - "codequality-clangtidy.json"
+
     tags:
         - linux
         - docker
