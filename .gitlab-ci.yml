@@ -1087,7 +1087,10 @@ CodeQualityClangTidy:
         - _HGuild/
 
     stage: test
+
+    # we need prepare, cause we need Catalyst
     needs:
+      - Linux-X86_64@Clang@@~Debug:Prepare
       - Linux-X86_64@Clang@@~Debug:Build
       
     except:
