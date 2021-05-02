@@ -15,4 +15,4 @@ GITLABCI_CODEQUALITY_BUILDTYPE="Debug"
 GITLABCI_CODEQUALITY_CLANGTIDY_IGNOREFILES="*/Private/ThirdParty/*"
 
 # disable due to C, so cant do it everywhere
-GITLABCI_CODEQUALITY_CLANGTIDY_IGNORECHECKS="modernize-use-trailing-return-type"
+GITLABCI_CODEQUALITY_CLANGTIDY_IGNORECHECKS="modernize-use-trailing-return-type;hicpp-deprecated-headers"
