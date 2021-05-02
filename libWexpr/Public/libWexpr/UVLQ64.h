@@ -91,7 +91,7 @@ static inline int wexpr_uvlq64_write (uint8_t* buffer, size_t bufferSize, uint64
 		buffer[j] = ((value >> ((i - j) * wexpr_private_uvlq64_numbits)) & wexpr_private_uvlq64_bitmask) | wexpr_private_uvlq64_bit;
 	}
 	
-	buffer[i] ^= wexpr_private_uvlq64_bit;
+	buffer[i] ^= wexpr_private_uvlq64_bit; // NOLINT: pointer math
 	return 1;
 }
 
@@ -110,7 +110,7 @@ static inline const uint8_t* wexpr_uvlq64_read (const uint8_t* buffer, size_t bu
 		if (bufferSize == 0) { return LIBWEXPR_NULLPTR; }
 		r = (r << wexpr_private_uvlq64_numbits) | LIBWEXPR_STATICCAST(uint64_t, (*buffer & wexpr_private_uvlq64_bitmask));
 		--bufferSize;
-	} while (*buffer++ & wexpr_private_uvlq64_bit);
+	} while ((*buffer++ & wexpr_private_uvlq64_bit) != 0); // NOLINT: pointer math
 	
 	*outValue = r;
 	return buffer;
