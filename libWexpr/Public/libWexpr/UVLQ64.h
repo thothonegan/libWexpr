@@ -42,15 +42,25 @@
 static inline size_t wexpr_uvlq64_bytesize(uint64_t value)
 {
 	// we get 7 bits per byte. 2^7 for each
-	if (value < 128ULL)        return 1; // 2^7
-	if (value < 16384ULL)      return 2; // 2^14
-	if (value < 2097152ULL)    return 3; // 2^21
-	if (value < 268435456ULL)  return 4; // 2^28
-	if (value < 34359738368ULL)         return 5; // 2^35
-	if (value < 4398046511104ULL)       return 6; // 2^42
-	if (value < 562949953421312ULL)     return 7; // 2^49
-	if (value < 72057594037927936ULL)   return 8; // 2^56
-	if (value < 9223372036854775808ULL) return 9; // 2^63
+	static const uint64_t v2_to_7  = 2*2*2*2*2*2*2;      // 2^7
+	static const uint64_t v2_to_14 = v2_to_7 * v2_to_7;  // 2^14
+	static const uint64_t v2_to_21 = v2_to_14 * v2_to_7; // 2^21
+	static const uint64_t v2_to_28 = v2_to_21 * v2_to_7; // 2^28
+	static const uint64_t v2_to_35 = v2_to_28 * v2_to_7; // 2^35
+	static const uint64_t v2_to_42 = v2_to_35 * v2_to_7; // 2^42
+	static const uint64_t v2_to_49 = v2_to_42 * v2_to_7; // 2^49
+	static const uint64_t v2_to_56 = v2_to_49 * v2_to_7; // 2^56
+	static const uint64_t v2_to_63 = v2_to_56 * v2_to_7; // 2^63
+	
+	if (value < v2_to_7)  return 1;
+	if (value < v2_to_14) return 2;
+	if (value < v2_to_21) return 3;
+	if (value < v2_to_28) return 4;
+	if (value < v2_to_35) return 5;
+	if (value < v2_to_42) return 6;
+	if (value < v2_to_49) return 7;
+	if (value < v2_to_56) return 8;
+	if (value < v2_to_63) return 9;
 	return 10; // 2^64+
 }
 
