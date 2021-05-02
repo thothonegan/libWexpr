@@ -33,8 +33,11 @@
 #define LIBWEXPR_UVLQ64_H
 
 #include "Endian.h"
+#include "Macros.h"
 
 #include <stdint.h>
+
+LIBWEXPR_EXTERN_C_BEGIN()
 
 static const uint8_t wexpr_private_uvlq64_numbits = 7;
 static const uint8_t wexpr_private_uvlq64_bitmask = 127;
@@ -84,6 +87,7 @@ static inline int wexpr_uvlq64_write (uint8_t* buffer, size_t bufferSize, uint64
 	size_t i = bytesNeeded - 1;
 	for (size_t j=0; j <= i; ++j)
 	{
+		// NOLINTNEXTLINE: we're in C so we cant avoid pointer math
 		buffer[j] = ((value >> ((i - j) * wexpr_private_uvlq64_numbits)) & wexpr_private_uvlq64_bitmask) | wexpr_private_uvlq64_bit;
 	}
 	
@@ -103,7 +107,7 @@ static inline const uint8_t* wexpr_uvlq64_read (const uint8_t* buffer, size_t bu
 	uint64_t r = 0;
 	
 	do {
-		if (bufferSize == 0) return LIBWEXPR_NULLPTR;
+		if (bufferSize == 0) { return LIBWEXPR_NULLPTR; }
 		r = (r << wexpr_private_uvlq64_numbits) | LIBWEXPR_STATICCAST(uint64_t, (*buffer & wexpr_private_uvlq64_bitmask));
 		--bufferSize;
 	} while (*buffer++ & wexpr_private_uvlq64_bit);
@@ -111,5 +115,7 @@ static inline const uint8_t* wexpr_uvlq64_read (const uint8_t* buffer, size_t bu
 	*outValue = r;
 	return buffer;
 }
+
+LIBWEXPR_EXTERN_C_END()
 
 #endif // LIBWEXPR_UVLQ64_H
