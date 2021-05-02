@@ -1075,3 +1075,44 @@ Scheduler:
       - Support/gitlabScheduler.rb
       - echo -e "section_end:`date +%s`:run_scheduler\r\033[0K"
 
+
+
+CodeQualityClangTidy:
+
+    image: docker.i.hackerguild.com/hackerguild/hackerguild-gitlabci-docker:latest
+
+    cache:
+        key: "Linux-X86_64@Clang@@"
+        paths:
+        - _HGuild/
+
+    stage: test
+    needs:
+      - Linux-X86_64@Clang@@~Debug:Build
+      
+    except:
+      - schedules
+
+    artifacts:
+        reports:
+            codequality: "codequality-clangtidy.json"
+    tags:
+        - linux
+        - docker
+        - x86_64
+    
+    variables:
+        HGUILD_PROFILE: Linux-X86_64@Clang@@
+        HGUILD_BUILDTYPE: Debug
+        HGUILD_SOURCENAME: libWexpr@CI
+
+    before_script:
+      - *hguild_before_script
+
+    script:
+      - echo -e "section_start:`date +%s`:run_scheduler\r\033[0KRun clang-tidy coverage"
+      - HGUILD_DISABLE_PROCESS_HEADERS=1 ${HGUILD} --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" source:run Catalyst clangTidyCodeClimate -- --sourceDir . --buildDir "$(${HGUILD} --buildType ${HGUILD_BUILDTYPE} --profile ${HGUILD_PROFILE} source:buildPath ${HGUILD_SOURCENAME})" 
+      - echo -e "section_end:`date +%s`:run_scheduler\r\033[0K"
+
+
+
