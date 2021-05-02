@@ -36,6 +36,10 @@
 
 #include <stdint.h>
 
+static const uint8_t wexpr_private_uvlq64_numbits = 7;
+static const uint8_t wexpr_private_uvlq64_bitmask = 127;
+static const uint8_t wexpr_private_uvlq64_bit = 128;
+
 //
 /// \brief Return the number of bytes which is needed to store a value in the UVLQ64.
 //
@@ -80,10 +84,10 @@ static inline int wexpr_uvlq64_write (uint8_t* buffer, size_t bufferSize, uint64
 	size_t i = bytesNeeded - 1;
 	for (size_t j=0; j <= i; ++j)
 	{
-		buffer[j] = ((value >> ((i - j) * 7)) & 127) | 128;
+		buffer[j] = ((value >> ((i - j) * wexpr_private_uvlq64_numbits)) & wexpr_private_uvlq64_bitmask) | wexpr_private_uvlq64_bit;
 	}
 	
-	buffer[i] ^= 128;
+	buffer[i] ^= wexpr_private_uvlq64_bit;
 	return 1;
 }
 
@@ -100,9 +104,9 @@ static inline const uint8_t* wexpr_uvlq64_read (const uint8_t* buffer, size_t bu
 	
 	do {
 		if (bufferSize == 0) return LIBWEXPR_NULLPTR;
-		r = (r << 7) | LIBWEXPR_STATICCAST(uint64_t, (*buffer & 127));
+		r = (r << wexpr_private_uvlq64_numbits) | LIBWEXPR_STATICCAST(uint64_t, (*buffer & wexpr_private_uvlq64_bitmask));
 		--bufferSize;
-	} while (*buffer++ & 128);
+	} while (*buffer++ & wexpr_private_uvlq64_bit);
 	
 	*outValue = r;
 	return buffer;
