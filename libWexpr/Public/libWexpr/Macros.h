@@ -46,7 +46,7 @@
 #else
 	#define LIBWEXPR_EXTERN_C_BEGIN()
 	#define LIBWEXPR_EXTERN_C_END()
-	#define LIBWEXPR_STATICCAST(type, val) ((type) val)
+	#define LIBWEXPR_STATICCAST(type, val) ((type) (val))
 	#define LIBWEXPR_NULLPTR NULL
 #endif
 

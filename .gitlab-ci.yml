@@ -1120,7 +1120,7 @@ CodeQualityClangTidy:
       - echo -e "section_start:`date +%s`:run_scheduler\r\033[0KRun clang-tidy coverage"
       - export BUILD_DIR=`${HGUILD} source:buildPath --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" ${HGUILD_SOURCENAME}`
       - export CATALYST_INSTALL_DIR=`${HGUILD} source:installPath --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" Catalyst`
-      - ruby ${CATALYST_INSTALL_DIR}Catalyst/Scripts/clangTidyCodeClimate.rb --sourceDir . --buildDir "${BUILD_DIR}" > codequality-clangtidy.json
+      - ruby ${CATALYST_INSTALL_DIR}Catalyst/Scripts/clangTidyCodeClimate.rb --sourceDir . --buildDir "${BUILD_DIR}" --ignorePaths '*/Private/ThirdParty/*' --ignoreChecks 'modernize-use-trailing-return-type;hicpp-deprecated-headers;modernize-deprecated-headers' > codequality-clangtidy.json
       - echo -e "section_end:`date +%s`:run_scheduler\r\033[0K"
 
 

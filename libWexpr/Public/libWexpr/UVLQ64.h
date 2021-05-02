@@ -33,8 +33,15 @@
 #define LIBWEXPR_UVLQ64_H
 
 #include "Endian.h"
+#include "Macros.h"
 
 #include <stdint.h>
+
+LIBWEXPR_EXTERN_C_BEGIN()
+
+static const uint8_t wexpr_private_uvlq64_numbits = 7;
+static const uint8_t wexpr_private_uvlq64_bitmask = 127;
+static const uint8_t wexpr_private_uvlq64_bit = 128;
 
 //
 /// \brief Return the number of bytes which is needed to store a value in the UVLQ64.
@@ -42,16 +49,27 @@
 static inline size_t wexpr_uvlq64_bytesize(uint64_t value)
 {
 	// we get 7 bits per byte. 2^7 for each
-	if (value < 128ULL)        return 1; // 2^7
-	if (value < 16384ULL)      return 2; // 2^14
-	if (value < 2097152ULL)    return 3; // 2^21
-	if (value < 268435456ULL)  return 4; // 2^28
-	if (value < 34359738368ULL)         return 5; // 2^35
-	if (value < 4398046511104ULL)       return 6; // 2^42
-	if (value < 562949953421312ULL)     return 7; // 2^49
-	if (value < 72057594037927936ULL)   return 8; // 2^56
-	if (value < 9223372036854775808ULL) return 9; // 2^63
-	return 10; // 2^64+
+	static const uint64_t v2_to_7  = 2*2*2*2*2*2*2;      // 2^7
+	static const uint64_t v2_to_14 = v2_to_7 * v2_to_7;  // 2^14
+	static const uint64_t v2_to_21 = v2_to_14 * v2_to_7; // 2^21
+	static const uint64_t v2_to_28 = v2_to_21 * v2_to_7; // 2^28
+	static const uint64_t v2_to_35 = v2_to_28 * v2_to_7; // 2^35
+	static const uint64_t v2_to_42 = v2_to_35 * v2_to_7; // 2^42
+	static const uint64_t v2_to_49 = v2_to_42 * v2_to_7; // 2^49
+	static const uint64_t v2_to_56 = v2_to_49 * v2_to_7; // 2^56
+	static const uint64_t v2_to_63 = v2_to_56 * v2_to_7; // 2^63
+	
+	if (value < v2_to_7)  { return 1; } // NOLINT: reasonable magic number
+	if (value < v2_to_14) { return 2; } // NOLINT: reasonable magic number
+	if (value < v2_to_21) { return 3; } // NOLINT: reasonable magic number
+	if (value < v2_to_28) { return 4; } // NOLINT: reasonable magic number
+	if (value < v2_to_35) { return 5; } // NOLINT: reasonable magic number
+	if (value < v2_to_42) { return 6; } // NOLINT: reasonable magic number
+	if (value < v2_to_49) { return 7; } // NOLINT: reasonable magic number
+	if (value < v2_to_56) { return 8; } // NOLINT: reasonable magic number
+	if (value < v2_to_63) { return 9; } // NOLINT: reasonable magic number
+	
+	return 10; // NOLINT: reasonable magic number // 2^64+
 }
 
 //
@@ -64,13 +82,16 @@ static inline size_t wexpr_uvlq64_bytesize(uint64_t value)
 static inline int wexpr_uvlq64_write (uint8_t* buffer, size_t bufferSize, uint64_t value)
 {
 	size_t bytesNeeded = wexpr_uvlq64_bytesize(value);
-	if (bufferSize < bytesNeeded) return 0;
+	if (bufferSize < bytesNeeded) { return 0; }
 	
 	size_t i = bytesNeeded - 1;
 	for (size_t j=0; j <= i; ++j)
-		buffer[j] = ((value >> ((i - j) * 7)) & 127) | 128;
+	{
+		// NOLINTNEXTLINE: we're in C so we cant avoid pointer math
+		buffer[j] = ((value >> ((i - j) * wexpr_private_uvlq64_numbits)) & wexpr_private_uvlq64_bitmask) | wexpr_private_uvlq64_bit;
+	}
 	
-	buffer[i] ^= 128;
+	buffer[i] ^= wexpr_private_uvlq64_bit; // NOLINT: pointer math
 	return 1;
 }
 
@@ -86,13 +107,15 @@ static inline const uint8_t* wexpr_uvlq64_read (const uint8_t* buffer, size_t bu
 	uint64_t r = 0;
 	
 	do {
-		if (bufferSize == 0) return LIBWEXPR_NULLPTR;
-		r = (r << 7) | LIBWEXPR_STATICCAST(uint64_t, (*buffer & 127));
+		if (bufferSize == 0) { return LIBWEXPR_NULLPTR; }
+		r = (r << wexpr_private_uvlq64_numbits) | LIBWEXPR_STATICCAST(uint64_t, (*buffer & wexpr_private_uvlq64_bitmask));
 		--bufferSize;
-	} while (*buffer++ & 128);
+	} while ((*buffer++ & wexpr_private_uvlq64_bit) != 0); // NOLINT: pointer math
 	
 	*outValue = r;
 	return buffer;
 }
+
+LIBWEXPR_EXTERN_C_END()
 
 #endif // LIBWEXPR_UVLQ64_H

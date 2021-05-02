@@ -37,15 +37,18 @@
 #include "UnitTest.h"
 WEXPR_UNITTEST_BEGIN(UVLQ64CanEncodeDecode)
 	// simple tests
-	uint8_t tempBuffer[10];
+	static const unsigned int TempBufferCount = 10;
+	uint8_t tempBuffer[TempBufferCount];
 	
-	uint64_t x[] = { 0x7f, 0x4000, 0, 0x3ffffe, 0x1fffff, 0x200000, 0x3311a1234df31413ULL};
+	// NOLINTNEXTLINE: test constants
+	const uint64_t x[] = { 0x7f, 0x4000, 0, 0x3ffffe, 0x1fffff, 0x200000, 0x3311a1234df31413ULL};
+	
 	for (int j=0; j < sizeof(x)/sizeof(uint64_t); ++j)
 	{
 		int writeResult = wexpr_uvlq64_write (tempBuffer, sizeof(tempBuffer), x[j]);
 		WEXPR_UNITTEST_ASSERT (writeResult, "Unable to write");
 		
-		uint64_t out;
+		uint64_t out = 0;
 		const uint8_t* readResult = wexpr_uvlq64_read (tempBuffer, sizeof(tempBuffer), &out);
 		WEXPR_UNITTEST_ASSERT (readResult != NULL, "Unable to read");
 		WEXPR_UNITTEST_ASSERT (out == x[j], "Not correct");

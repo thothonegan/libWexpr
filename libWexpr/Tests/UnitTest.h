@@ -64,7 +64,7 @@ typedef struct WexprSuiteResult
 #ifdef __cplusplus
 	#define WEXPR_UNITTEST_STATICCAST(type, val) static_cast<type>(val)
 #else
-	#define WEXPR_UNITTEST_STATICCAST(type, val) ((type) val)
+	#define WEXPR_UNITTEST_STATICCAST(type, val) ((type) (val))
 #endif
 
 #define WEXPR_UNITTEST_BEGIN(name) \

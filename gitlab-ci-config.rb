@@ -12,4 +12,7 @@ GITLABCI_SCHEDULER_BUILDTYPE="Debug"
 GITLABCI_CODEQUALITY_CLANGTIDY=true
 GITLABCI_CODEQUALITY_PROFILE="Linux-X86_64@Clang@@"
 GITLABCI_CODEQUALITY_BUILDTYPE="Debug"
+GITLABCI_CODEQUALITY_CLANGTIDY_IGNOREFILES="*/Private/ThirdParty/*"
 
+# disable due to C, so cant do it everywhere
+GITLABCI_CODEQUALITY_CLANGTIDY_IGNORECHECKS="modernize-use-trailing-return-type;hicpp-deprecated-headers;modernize-deprecated-headers"

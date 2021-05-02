@@ -46,7 +46,7 @@
 #ifdef __cplusplus
 	#define WEXPR_REINTERP_CAST(Type, val) reinterpret_cast<Type>(val)
 #else
-	#define WEXPR_REINTERP_CAST(Type, val) ((Type)val)
+	#define WEXPR_REINTERP_CAST(Type, val) ((Type)(val))
 #endif
 
 #ifdef _MSC_VER
