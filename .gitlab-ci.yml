@@ -1111,8 +1111,8 @@ CodeQualityClangTidy:
 
     script:
       - echo -e "section_start:`date +%s`:run_scheduler\r\033[0KRun clang-tidy coverage"
-      - export BUILD_DIR=`${HGUILD} --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" source:buildPath ${HGUILD_SOURCENAME}`
-      - HGUILD_DISABLE_PROCESS_HEADERS=1 ${HGUILD} --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" source:run Catalyst clangTidyCodeClimate -- --sourceDir . --buildDir "${BUILD_DIR}"
+      - export BUILD_DIR=`${HGUILD} source:buildPath --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" ${HGUILD_SOURCENAME}`
+      - HGUILD_DISABLE_PROCESS_HEADERS=1 ${HGUILD} source:run --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" Catalyst clangTidyCodeClimate -- --sourceDir . --buildDir "${BUILD_DIR}"
       - echo -e "section_end:`date +%s`:run_scheduler\r\033[0K"
 
 
