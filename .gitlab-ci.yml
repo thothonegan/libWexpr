@@ -1118,15 +1118,7 @@ CodeQualityClangTidy:
       - echo -e "section_start:`date +%s`:run_scheduler\r\033[0KRun clang-tidy coverage"
       - export BUILD_DIR=`${HGUILD} source:buildPath --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" ${HGUILD_SOURCENAME}`
       - export CATALYST_INSTALL_DIR=`${HGUILD} source:installPath --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" Catalyst`
-      - ls -Alh _HGuild
-      - ls -Alh _HGuild/Install
-      - ls -Alh _HGuild/Install/Linux-X86_64@Clang@@
-      - ls -Alh _HGuild/Install/Linux-X86_64@Clang@@/Debug
-      - ls -Alh _HGuild/Install/Linux-X86_64@Clang@@/Debug/Catalyst@master
-      - ls -Alh _HGuild/Install/Linux-X86_64@Clang@@/Debug/Catalyst@master/Catalyst
-      - ls -Alh _HGuild/Install/Linux-X86_64@Clang@@/Debug/Catalyst@master/Catalyst/Scripts
-      - ls -Alh _HGuild/Install/Linux-X86_64@Clang@@/Debug/Catalyst@master/Catalyst/Scripts
-      - ruby ${CATALYST_INSTALL_DIR}Catalyst/Scripts/clangTidyCodeClimate.rb --sourceDir . --buildDir "${BUILD_DIR}"
+      - ruby ${CATALYST_INSTALL_DIR}Catalyst/Scripts/clangTidyCodeClimate.rb --sourceDir . --buildDir "${BUILD_DIR}" > codequality-clangtidy.json
       - echo -e "section_end:`date +%s`:run_scheduler\r\033[0K"
 
 
