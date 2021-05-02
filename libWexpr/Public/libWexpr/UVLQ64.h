@@ -52,16 +52,17 @@ static inline size_t wexpr_uvlq64_bytesize(uint64_t value)
 	static const uint64_t v2_to_56 = v2_to_49 * v2_to_7; // 2^56
 	static const uint64_t v2_to_63 = v2_to_56 * v2_to_7; // 2^63
 	
-	if (value < v2_to_7)  return 1;
-	if (value < v2_to_14) return 2;
-	if (value < v2_to_21) return 3;
-	if (value < v2_to_28) return 4;
-	if (value < v2_to_35) return 5;
-	if (value < v2_to_42) return 6;
-	if (value < v2_to_49) return 7;
-	if (value < v2_to_56) return 8;
-	if (value < v2_to_63) return 9;
-	return 10; // 2^64+
+	if (value < v2_to_7)  { return 1; } // NOLINT: reasonable magic number
+	if (value < v2_to_14) { return 2; } // NOLINT: reasonable magic number
+	if (value < v2_to_21) { return 3; } // NOLINT: reasonable magic number
+	if (value < v2_to_28) { return 4; } // NOLINT: reasonable magic number
+	if (value < v2_to_35) { return 5; } // NOLINT: reasonable magic number
+	if (value < v2_to_42) { return 6; } // NOLINT: reasonable magic number
+	if (value < v2_to_49) { return 7; } // NOLINT: reasonable magic number
+	if (value < v2_to_56) { return 8; } // NOLINT: reasonable magic number
+	if (value < v2_to_63) { return 9; } // NOLINT: reasonable magic number
+	
+	return 10; // NOLINT: reasonable magic number // 2^64+
 }
 
 //
@@ -74,11 +75,13 @@ static inline size_t wexpr_uvlq64_bytesize(uint64_t value)
 static inline int wexpr_uvlq64_write (uint8_t* buffer, size_t bufferSize, uint64_t value)
 {
 	size_t bytesNeeded = wexpr_uvlq64_bytesize(value);
-	if (bufferSize < bytesNeeded) return 0;
+	if (bufferSize < bytesNeeded) { return 0; }
 	
 	size_t i = bytesNeeded - 1;
 	for (size_t j=0; j <= i; ++j)
+	{
 		buffer[j] = ((value >> ((i - j) * 7)) & 127) | 128;
+	}
 	
 	buffer[i] ^= 128;
 	return 1;
