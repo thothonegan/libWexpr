@@ -57,16 +57,19 @@ bool s_isValidBase64Character (char c)
 
 uint8_t s_indexOfBase64Character (uint8_t b)
 {
-	if (b >= 'A' && b <= 'Z') return b - 'A';
-	else if (b >= 'a' && b <= 'z') return (b - 'a') + 26;
-	else if (b >= '0' && b <= '9') return (b - '0') + 52;
-	else if (b == '+') return 62;
-	else if (b == '/') return 63;
+	const uint8_t IndexOf_a = 26;
+	const uint8_t IndexOf_0 = 52;
+	const uint8_t IndexOf_Plus = 62;
+	const uint8_t IndexOf_Slash = 63;
+	const uint8_t Invalid = 0xFF;
 	
-	else
-	{
-		return 0xFF; // invalid
-	}
+	if (b >= 'A' && b <= 'Z') { return b - 'A'; }
+	else if (b >= 'a' && b <= 'z') { return (b - 'a') + IndexOf_a; }
+	else if (b >= '0' && b <= '9') { return (b - '0') + IndexOf_0; }
+	else if (b == '+') { return IndexOf_Plus; }
+	else if (b == '/') { return IndexOf_Slash; }
+	
+	return Invalid;
 }
 
 void s_base64EncodeAndAppend (char* buffer, uint8_t input[3], size_t amountToWrite)

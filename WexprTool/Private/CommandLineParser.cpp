@@ -35,16 +35,16 @@
 
 namespace
 {
-	CommandLineParser::Command s_commandFromString (std::string str)
+	CommandLineParser::Command s_commandFromString (const std::string& str)
 	{
 		if (str == "humanReadable")
-			return CommandLineParser::Command::HumanReadable;
+		{ return CommandLineParser::Command::HumanReadable; }
 		else if (str == "validate")
-			return CommandLineParser::Command::Validate;
+		{ return CommandLineParser::Command::Validate; }
 		else if (str == "mini")
-			return CommandLineParser::Command::Mini;
+		{ return CommandLineParser::Command::Mini; }
 		else if (str == "binary")
-			return CommandLineParser::Command::Binary;
+		{ return CommandLineParser::Command::Binary; }
 		
 		return CommandLineParser::Command::Unknown;
 	}
@@ -59,9 +59,11 @@ CommandLineParser::Results CommandLineParser::parse(int argc, char ** argv)
 		std::string arg (argv[argIndex]);
 		
 		if (arg == "-h" || arg == "--help")
-			r.help = true;
+		{ r.help = true; }
+		
 		else if (arg == "-v" || arg == "--version")
-			r.version = true;
+		{ r.version = true; }
+		
 		else if (arg == "-c" || arg == "--command")
 		{
 			if ( (argIndex+1) < argc)
@@ -70,6 +72,7 @@ CommandLineParser::Results CommandLineParser::parse(int argc, char ** argv)
 				++argIndex;
 			}
 		}
+		
 		else if (arg == "-i" || arg == "--input")
 		{
 			if ( (argIndex+1) < argc)
@@ -77,6 +80,7 @@ CommandLineParser::Results CommandLineParser::parse(int argc, char ** argv)
 				r.inputPath = argv[argIndex+1];
 			}
 		}
+		
 		else if (arg == "-o" || arg == "--output")
 		{
 			if ( (argIndex+1) < argc)

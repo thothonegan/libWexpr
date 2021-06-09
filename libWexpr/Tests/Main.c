@@ -37,6 +37,9 @@
 
 int main (int argc, char** argv)
 {
+	(void)argc;
+	(void)argv;
+	
 	WexprSuiteResult res = {0, 0};
 	
 	#define RUN_SUITE(name) \
