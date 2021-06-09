@@ -99,7 +99,9 @@ void s_base64DecodeAndAppend (void* buffer, uint8_t input[4], size_t amountToWri
 	};
 	
 	for (size_t i=0; i < amountToWrite; ++i)
+	{
 		b[i] = decodedBytes[i];
+	}
 }
 
 // --- main
@@ -113,7 +115,9 @@ Base64Buffer base64_decode (Base64IBuffer buf)
 	res.buffer = malloc(res.size);
 	
 	if (!res.buffer)
+	{
 		return res; // buffer is null so it's invalid
+	}
 	
 	const uint8_t* bufBuf = buf.buffer;
 	
@@ -144,7 +148,9 @@ Base64Buffer base64_decode (Base64IBuffer buf)
 		{
 			// swap our output buffer with the positions
 			for (size_t i=0; i < 4 ; ++i)
+			{
 				outputBuffer[i] = s_indexOfBase64Character (outputBuffer[i]);
+			}
 			
 			s_base64DecodeAndAppend((uint8_t*)res.buffer + outPos, outputBuffer, 3);
 			outPos += 3;
@@ -159,7 +165,9 @@ Base64Buffer base64_decode (Base64IBuffer buf)
 		
 		// swap our output buffer with the positions
 		for (size_t i=0; i < 4 ; ++i)
+		{
 			outputBuffer[i] = s_indexOfBase64Character (outputBuffer[i]);
+		}
 		
 		s_base64DecodeAndAppend((uint8_t*)res.buffer + outPos, outputBuffer, outBufferPos-1);
 		outPos += outBufferPos-1;
@@ -183,7 +191,9 @@ Base64Buffer base64_encode (Base64IBuffer buf)
 	res.buffer = malloc(res.size);
 	
 	if (!res.buffer)
+	{
 		return res; // buffer is null so its invalid
+	}
 	
 	size_t remaining = buf.size;
 	uint8_t inputBytes[3];
