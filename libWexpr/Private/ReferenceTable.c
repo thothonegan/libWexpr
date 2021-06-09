@@ -41,6 +41,8 @@
 struct WexprReferenceTable
 {
 	map_t m_hash;
+	
+	WexprReferenceTableCreateUnknownKeyCallback m_callback;
 };
 
 typedef struct WexprReferenceTablePrivateMapElement
@@ -51,6 +53,8 @@ typedef struct WexprReferenceTablePrivateMapElement
 
 static int s_refTable_freeHashData (any_t userData, any_t data)
 {
+	(void)userData;
+	
 	WexprReferenceTablePrivateMapElement* elem = data;
 	free (elem->key);
 	wexpr_Expression_destroy(elem->value);
@@ -151,6 +155,7 @@ WexprReferenceTable* wexpr_ReferenceTable_create ()
 {
 	WexprReferenceTable* ref = malloc (sizeof(WexprReferenceTable));
 	ref->m_hash = hashmap_new();
+	ref->m_callback = LIBWEXPR_NULLPTR;
 	
 	return ref;
 }
@@ -206,6 +211,16 @@ WexprExpression* wexpr_ReferenceTable_expressionForKey (
 	if (res == MAP_OK && elem)
 	{
 		return elem->value;
+	}
+	
+	if (self->m_callback)
+	{
+		WexprExpression* val = self->m_callback(key);
+		if (val)
+		{
+			wexpr_ReferenceTable_setExpressionForKey(self, key, val); // transfer
+			return val;
+		}
 	}
 	
 	return NULL;
@@ -303,4 +318,12 @@ WexprExpression* wexpr_ReferenceTable_expressionAtIndex (
 	hashmap_iterate (self->m_hash, &s_refTable_getValueAtIndex, &val);
 	
 	return val.result;
+}
+
+void wexpr_ReferenceTable_setCreateUnknownKeyCallback (
+	WexprReferenceTable* self,
+	WexprReferenceTableCreateUnknownKeyCallback callback
+)
+{
+	self->m_callback = callback;
 }

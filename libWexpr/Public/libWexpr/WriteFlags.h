@@ -46,7 +46,7 @@ typedef int8_t WexprWriteFlags;
 enum
 {
 	WexprWriteFlagNone = 0, ///< No special flags
-	WexprWriteFlagHumanReadable = (1 << 0), ///< Instead of trying to compress down, will add newlines and indentation to make it more readable.
+	WexprWriteFlagHumanReadable = (1 << 0U), ///< Instead of trying to compress down, will add newlines and indentation to make it more readable.
 };
 
 LIBWEXPR_EXTERN_C_END()
