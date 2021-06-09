@@ -64,9 +64,37 @@ WEXPR_UNITTEST_BEGIN (ReferenceTableCanSetKey)
 	
 WEXPR_UNITTEST_END ()
 
+static WexprExpression* createValueForKey (const char* key)
+{
+	return wexpr_Expression_createValue(key);
+}
+
+WEXPR_UNITTEST_BEGIN (ReferenceTableCanSetCallback)
+
+	WexprReferenceTable* table = wexpr_ReferenceTable_create ();
+	
+	wexpr_ReferenceTable_setCreateUnknownKeyCallback(table, &createValueForKey);
+	
+	// if we reference an unknown key, it fills in the value with the reference table value
+	WexprExpression* keyVal = wexpr_ReferenceTable_expressionForKey(table, "key");
+	WEXPR_UNITTEST_ASSERT (keyVal, "Got correct value back from table");
+	WEXPR_UNITTEST_ASSERT (strcmp(wexpr_Expression_value(keyVal), "key") == 0, "value is correct");
+	
+	// if we already set one, it uses that instead
+	WexprExpression* val = wexpr_Expression_createValue ("1");
+	wexpr_ReferenceTable_setExpressionForKey (table, "0", val); // transfer ownership
+	
+	keyVal = wexpr_ReferenceTable_expressionForKey(table, "0");
+	WEXPR_UNITTEST_ASSERT (keyVal, "Got correct value back from table");
+	WEXPR_UNITTEST_ASSERT (strcmp(wexpr_Expression_value(keyVal), "1") == 0, "value is correct");
+	
+	wexpr_ReferenceTable_destroy (table);
+WEXPR_UNITTEST_END()
+
 WEXPR_UNITTEST_SUITE_BEGIN (ReferenceTable)
 	WEXPR_UNITTEST_SUITE_ADDTEST (ReferenceTable, ReferenceTableCanCreate);
 	WEXPR_UNITTEST_SUITE_ADDTEST (ReferenceTable, ReferenceTableCanSetKey);
+	WEXPR_UNITTEST_SUITE_ADDTEST (ReferenceTable, ReferenceTableCanSetCallback);
 WEXPR_UNITTEST_SUITE_END ()
 
 #endif // WEXPR_TESTS_REFERENCETABLE_H
