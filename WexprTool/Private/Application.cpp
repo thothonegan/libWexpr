@@ -56,15 +56,12 @@ namespace
 				std::istreambuf_iterator<char>(std::cin), {}
 			);
 		}
-		else
-		{
-			std::fstream file (inputPath, std::ios::in);
-			
-			return std::string (
-				std::istreambuf_iterator<char>(file), {}
-			);
-		}
 		
+		std::fstream file (inputPath, std::ios::in);
+			
+		return std::string (
+			std::istreambuf_iterator<char>(file), {}
+		);
 	}
 
 	void s_writeAllOutputTo (const std::string& outputPath, const std::string& str)
@@ -94,7 +91,7 @@ namespace
 		
 		std::ostream& s = *stream; // the stream to write to
 		
-		// TODO: Move writing header to libWexpr since its part of the file format.
+		// TODO(thothonegan): Move writing header to libWexpr since its part of the file format.
 		
 		// write header
 		uint8_t header [20];

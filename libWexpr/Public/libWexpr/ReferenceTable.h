@@ -53,6 +53,12 @@ struct WexprReferenceTable;
 
 typedef struct WexprReferenceTable WexprReferenceTable;
 
+//
+/// \brief Callback which will be called if an unknown key is fetched.
+/// Will return a newly created key, or null if none.
+//
+typedef struct WexprExpression* (*WexprReferenceTableCreateUnknownKeyCallback) (const char* key);
+
 /// \name Construction/Destruction
 /// \relates WexprReferenceTable
 /// \{
@@ -111,7 +117,7 @@ LIBWEXPR_PUBLIC struct WexprExpression* wexpr_ReferenceTable_expressionForKey (
 );
 
 //
-/// \brief Return the expression for the given key if found
+/// \brief Return the expression for the given key if found. If not, will call the create unknown callback, or nullptr if not found.
 /// \param self The reference table
 /// \param key The key to fetch
 /// \param keyLength The size of key
@@ -183,6 +189,17 @@ LIBWEXPR_PUBLIC const char* wexpr_ReferenceTable_keyAtIndex (
 LIBWEXPR_PUBLIC struct WexprExpression* wexpr_ReferenceTable_expressionAtIndex (
 	WexprReferenceTable* self,
 	size_t index
+);
+
+
+//
+/// \brief Set the unknown callback - called when a key isn't resolved to create the value.
+/// \param self The reference table
+/// \param callback The callback which should create the value for a given key (or nullptr).
+//
+LIBWEXPR_PUBLIC void wexpr_ReferenceTable_setCreateUnknownKeyCallback (
+	WexprReferenceTable* self,
+	WexprReferenceTableCreateUnknownKeyCallback callback
 );
 
 /// \}

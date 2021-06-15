@@ -108,18 +108,6 @@ struct WexprExpression
 
 // ---------------------- PRIVATE ----------------------------------
 
-static char* s_dupLengthString (const char* s, size_t n)
-{
-	size_t len = n;
-	char* result = (char*)malloc (len + 1);
-	if (!result)
-		return NULL;
-
-	memcpy (result, s, len);
-	result[len] = '\0';
-	return result;
-}
-
 typedef struct PrivateStringRef
 {
 	const char* ptr;
@@ -157,12 +145,12 @@ static PrivateStringRef s_StringRef_createInvalid ()
 static bool s_StringRef_isEqual (PrivateStringRef self, PrivateStringRef rhs)
 {
 	if (self.size != rhs.size)
-		return false;
+	{ return false; }
 	
 	for (size_t i=0; i < self.size; ++i)
 	{
 		if (self.ptr[i] != rhs.ptr[i])
-			return false;
+		{ return false; }
 	}
 	
 	return true;
@@ -171,7 +159,7 @@ static bool s_StringRef_isEqual (PrivateStringRef self, PrivateStringRef rhs)
 static PrivateStringRef s_StringRef_slice (PrivateStringRef self, size_t index)
 {
 	if (index >= self.size)
-		return s_StringRef_createInvalid();
+	{ return s_StringRef_createInvalid(); }
 	
 	PrivateStringRef res = self;
 	res.ptr += index;
@@ -183,7 +171,7 @@ static PrivateStringRef s_StringRef_slice (PrivateStringRef self, size_t index)
 static PrivateStringRef s_StringRef_slice2 (PrivateStringRef self, size_t index, size_t length)
 {
 	if (index + length > self.size)
-		return s_StringRef_createInvalid();
+	{ return s_StringRef_createInvalid(); }
 	
 	PrivateStringRef res = self;
 	res.ptr += index;
@@ -197,7 +185,7 @@ static size_t s_StringRef_find (PrivateStringRef self, char character)
 	for (size_t i=0; i < self.size ; ++i)
 	{
 		if (self.ptr[i] == character)
-			return i;
+		{ return i; }
 	}
 	
 	return s_InvalidIndex;
@@ -206,7 +194,7 @@ static size_t s_StringRef_find (PrivateStringRef self, char character)
 static size_t s_StringRef_findString (PrivateStringRef self, PrivateStringRef rhs)
 {
 	if (rhs.size > self.size)
-		return s_InvalidIndex;
+	{ return s_InvalidIndex; }
 	
 	for (size_t i=0; i < self.size; ++i)
 	{
@@ -301,11 +289,11 @@ static bool s_isEscapeValid (char c)
 
 static char s_valueForEscape (char c)
 {
-	if (c == '"') return '"';
-	if (c == 'r') return '\r';
-	if (c == 'n') return '\n';
-	if (c == 't') return '\t';
-	if (c == '\\') return '\\';
+	if (c == '"') { return '"'; }
+	if (c == 'r') { return '\r'; }
+	if (c == 'n') { return '\n'; }
+	if (c == 't') { return '\t'; }
+	if (c == '\\') { return '\\'; }
 	
 	return 0; // invalid escape
 }
@@ -318,11 +306,11 @@ static bool s_requiresEscape (char c)
 static char s_escapeForValue (char c)
 {
 	// only returns the escape part
-	if (c == '"') return '"';
-	if (c == '\r') return 'r';
-	if (c == '\n') return 'n';
-	if (c == '\t') return 't';
-	if (c == '\\') return '\\';
+	if (c == '"')  { return '"'; }
+	if (c == '\r') { return 'r'; }
+	if (c == '\n') { return 'n'; }
+	if (c == '\t') { return 't'; }
+	if (c == '\\') { return '\\'; }
 	
 	return 0; // invalid
 }
@@ -334,7 +322,7 @@ static PrivateStringRef s_trimFrontOfString (PrivateStringRef str, PrivateParser
 	while (true)
 	{
 		if (str.size == 0) // trimmed everything
-			return str;
+		{ return str; }
 		
 		char first = str.ptr[0];
 		
@@ -618,11 +606,11 @@ static PrivateWexprValueStringProperties s_wexprValueStringProperties (PrivateSt
 		
 		// does it need to be escaped?
 		if (c == '"')
-			props.writeByteSize += 1; // needs the escape
+		{ props.writeByteSize += 1; } // needs the escape
 	}
 	
 	if (len == 0)
-		props.isBarewordSafe = false; // empty string is not safe, since that will be nothing
+	{ props.isBarewordSafe = false; } // empty string is not safe, since that will be nothing
 	
 	return props;
 }
@@ -1530,9 +1518,9 @@ static PrivateStringRef p_wexpr_Expression_appendStringRepresentationToAllocated
 		char* newBuffer = realloc(buffer, newSize);
 		
 		if (writeHumanReadable)
-			strncpy (newBuffer+curBufferSize, "#(\n", 3);
+		{ strncpy (newBuffer+curBufferSize, "#(\n", 3); }
 		else
-			strncpy (newBuffer+curBufferSize, "#(", 2);
+		{ strncpy (newBuffer+curBufferSize, "#(", 2); }
 		
 		for (size_t i=0; i < arraySize; ++i)
 		{
@@ -1619,15 +1607,15 @@ static PrivateStringRef p_wexpr_Expression_appendStringRepresentationToAllocated
 		char* newBuffer = realloc (buffer, newSize);
 		
 		if (writeHumanReadable)
-			strncpy (newBuffer+curBufferSize, "@(\n", 3);
+		{ strncpy (newBuffer+curBufferSize, "@(\n", 3); }
 		else
-			strncpy (newBuffer+curBufferSize, "@(", 2);
+		{ strncpy (newBuffer+curBufferSize, "@(", 2); }
 		
 		for (size_t i=0; i < mapSize; ++i)
 		{
 			const char* key = wexpr_Expression_mapKeyAt(self, i);
 			if (!key)
-				continue; // we shouldnt ever get an empty key, but its possible currently in the case of dereffing in a key for some reason : @([a]a b *[a] c)
+			{ continue; } // we shouldnt ever get an empty key, but its possible currently in the case of dereffing in a key for some reason : @([a]a b *[a] c)
 			
 			size_t keyLength = strlen(key);
 			size_t keyMemoryLength = keyLength;
@@ -1635,7 +1623,7 @@ static PrivateStringRef p_wexpr_Expression_appendStringRepresentationToAllocated
 			
 			PrivateWexprValueStringProperties keyProps = s_wexprValueStringProperties(s_stringRef_createFromPointerSize(key, keyLength));
 			if (!keyProps.isBarewordSafe)
-				keyMemoryLength = keyProps.writeByteSize + 2; // cause we need to quote or escape it
+			{ keyMemoryLength = keyProps.writeByteSize + 2; } // cause we need to quote or escape it
 			
 			// if human readable, indent the line, output the key, space, object, newline
 			if (writeHumanReadable)
@@ -2180,7 +2168,7 @@ WexprMutableBuffer wexpr_Expression_createBinaryRepresentation (WexprExpression*
 const char* wexpr_Expression_value (WexprExpression* self)
 {
 	if (self->m_type != WexprExpressionTypeValue)
-		return NULL;
+	{ return NULL; }
 	
 	return self->m_value.data;
 }
@@ -2188,7 +2176,7 @@ const char* wexpr_Expression_value (WexprExpression* self)
 void wexpr_Expression_valueSet (WexprExpression* self, const char* str)
 {
 	if (self->m_type != WexprExpressionTypeValue)
-		return;
+	{ return; }
 	
 	free (self->m_value.data);
 	self->m_value.data = strdup(str);
@@ -2197,7 +2185,7 @@ void wexpr_Expression_valueSet (WexprExpression* self, const char* str)
 void wexpr_Expression_valueSetLengthString (WexprExpression* self, const char* str, size_t length)
 {
 	if (self->m_type != WexprExpressionTypeValue)
-		return;
+	{ return; }
 	
 	free (self->m_value.data);
 	self->m_value.data = malloc(length+1);
@@ -2210,7 +2198,7 @@ void wexpr_Expression_valueSetLengthString (WexprExpression* self, const char* s
 const void* wexpr_Expression_binaryData_data (WexprExpression* self)
 {
 	if (self->m_type != WexprExpressionTypeBinaryData)
-		return NULL;
+	{ return NULL; }
 	
 	return self->m_binaryData.data;
 }
@@ -2218,7 +2206,7 @@ const void* wexpr_Expression_binaryData_data (WexprExpression* self)
 size_t wexpr_Expression_binaryData_size (WexprExpression* self)
 {
 	if (self->m_type != WexprExpressionTypeBinaryData)
-		return 0;
+	{ return 0; }
 	
 	return self->m_binaryData.size;
 }
@@ -2226,13 +2214,13 @@ size_t wexpr_Expression_binaryData_size (WexprExpression* self)
 void wexpr_Expression_binaryData_setValue (WexprExpression* self, const void* buffer, size_t byteSize)
 {
 	if (self->m_type != WexprExpressionTypeBinaryData)
-		return;
+	{ return; }
 	
 	free(self->m_binaryData.data);
 	self->m_binaryData.size = byteSize;
 	self->m_binaryData.data = malloc(byteSize);
 	if (!self->m_binaryData.data)
-		return; // unable to allocate
+	{ return; } // unable to allocate
 	
 	memcpy (self->m_binaryData.data, buffer, byteSize);
 }
@@ -2242,7 +2230,7 @@ void wexpr_Expression_binaryData_setValue (WexprExpression* self, const void* bu
 size_t wexpr_Expression_arrayCount (WexprExpression* self)
 {
 	if (self->m_type != WexprExpressionTypeArray)
-		return 0;
+	{ return 0; }
 	
 	return self->m_array.listCount;
 }
@@ -2250,13 +2238,13 @@ size_t wexpr_Expression_arrayCount (WexprExpression* self)
 WexprExpression* wexpr_Expression_arrayAt (WexprExpression* self, size_t index)
 {
 	if (self->m_type != WexprExpressionTypeArray)
-		return NULL;
+	{ return NULL; }
 	
 	for (WexprExpressionPrivateArrayElement* list = self->m_array.list;
 		 list != NULL; list = list->next)
 	{
 		if (index == 0)
-			return list->expression;
+		{ return list->expression; }
 		
 		--index;
 	}
@@ -2268,7 +2256,7 @@ WexprExpression* wexpr_Expression_arrayAt (WexprExpression* self, size_t index)
 void wexpr_Expression_arrayAddElementToEnd (WexprExpression* self, WexprExpression* element)
 {
 	if (self->m_type != WexprExpressionTypeArray)
-		return;
+	{ return; }
 	
 	WexprExpressionPrivateArrayElement* elem = malloc(sizeof(WexprExpressionPrivateArrayElement));
 	elem->expression = element;
@@ -2295,7 +2283,7 @@ void wexpr_Expression_arrayAddElementToEnd (WexprExpression* self, WexprExpressi
 size_t wexpr_Expression_mapCount (WexprExpression* self)
 {
 	if (self->m_type != WexprExpressionTypeMap)
-		return 0;
+	{ return 0; }
 	
 	return hashmap_length(self->m_map.hash);
 }
@@ -2345,7 +2333,7 @@ static int s_getValueAtIndex (any_t userData, any_t data)
 const char* wexpr_Expression_mapKeyAt (WexprExpression* self, size_t index)
 {
 	if (self->m_type != WexprExpressionTypeMap)
-		return NULL; // not a map
+	{ return NULL; } // not a map
 	
 	PrivateGetKeyValueAtIndex val;
 	val.index = index;
@@ -2359,7 +2347,7 @@ const char* wexpr_Expression_mapKeyAt (WexprExpression* self, size_t index)
 WexprExpression* wexpr_Expression_mapValueAt (WexprExpression* self, size_t index)
 {
 	if (self->m_type != WexprExpressionTypeMap)
-		return NULL; // not a map
+	{ return NULL; } // not a map
 		
 	PrivateGetKeyValueAtIndex val;
 	val.index = index;
@@ -2373,7 +2361,7 @@ WexprExpression* wexpr_Expression_mapValueAt (WexprExpression* self, size_t inde
 WexprExpression* wexpr_Expression_mapValueForKey (WexprExpression* self, const char* key)
 {
 	if (self->m_type != WexprExpressionTypeMap)
-		return NULL; // not a map
+	{ return NULL; } // not a map
 	
 	WexprExpressionPrivateMapElement* elem = NULL;
 	int res = hashmap_get (self->m_map.hash, (char*) key, (void**) &elem);
@@ -2403,7 +2391,7 @@ WexprExpression* wexpr_Expression_mapValueForLengthKey (WexprExpression* self, c
 void wexpr_Expression_mapSetValueForKey (WexprExpression* self, const char* key, WexprExpression* value)
 {
 	if (self->m_type != WexprExpressionTypeMap)
-		return;
+	{ return; }
 	
 	WexprExpressionPrivateMapElement* elem = malloc (sizeof(WexprExpressionPrivateMapElement));
 	elem->key = strdup(key);
@@ -2415,7 +2403,7 @@ void wexpr_Expression_mapSetValueForKey (WexprExpression* self, const char* key,
 void wexpr_Expression_mapSetValueForKeyLengthString (WexprExpression* self, const char* key, size_t length, WexprExpression* value)
 {
 	if (self->m_type != WexprExpressionTypeMap)
-		return;
+	{ return; }
 	
 	WexprExpressionPrivateMapElement* elem = malloc (sizeof(WexprExpressionPrivateMapElement));
 	elem->value = value;
