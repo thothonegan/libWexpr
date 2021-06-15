@@ -170,7 +170,7 @@ int main (int argc, char** argv)
 					err.code = WexprErrorCodeBinaryInvalidHeader;
 					err.column = 0;
 					err.line = 0;
-					err.message = strdup("Invalid binary header - not big enough");
+					err.message = LIBWEXPR_STRDUP("Invalid binary header - not big enough");
 					break;
 				}
 				
@@ -183,7 +183,7 @@ int main (int argc, char** argv)
 					err.code = WexprErrorCodeBinaryInvalidHeader;
 					err.column = 0;
 					err.line = 0;
-					err.message = strdup("Invalid binary header - invalid magic");
+					err.message = LIBWEXPR_STRDUP("Invalid binary header - invalid magic");
 					break;
 				}
 				
@@ -192,7 +192,7 @@ int main (int argc, char** argv)
 					err.code = WexprErrorCodeBinaryUnknownVersion;
 					err.column = 0;
 					err.line = 0;
-					err.message = strdup("Invalid binary header - unknown version");
+					err.message = LIBWEXPR_STRDUP("Invalid binary header - unknown version");
 					break;
 				}
 				
@@ -203,7 +203,7 @@ int main (int argc, char** argv)
 					err.code = WexprErrorCodeBinaryInvalidHeader;
 					err.column = 0;
 					err.line = 0;
-					err.message = strdup("Invalid binary header - unknown reserved bits");
+					err.message = LIBWEXPR_STRDUP("Invalid binary header - unknown reserved bits");
 					break;
 				}
 				
@@ -237,7 +237,7 @@ int main (int argc, char** argv)
 							err.code = WexprErrorCodeBinaryMultipleExpressions;
 							err.column = 0;
 							err.line = 0;
-							err.message = strdup("Found multiple expression chunks");
+							err.message = LIBWEXPR_STRDUP("Found multiple expression chunks");
 							break;
 						}
 						
@@ -249,7 +249,7 @@ int main (int argc, char** argv)
 					}
 					else
 					{
-						printf ("Warning: Unknown chunk with type %d at byte 0x%lx\n", int(type), curPos+sizeSize);
+						printf ("Warning: Unknown chunk with type %d at byte 0x%zx\n", int(type), curPos+sizeSize);
 					}
 					
 					// move forward : pass type, pass size

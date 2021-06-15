@@ -49,15 +49,15 @@ static const uint8_t wexpr_private_uvlq64_bit = 128;
 static inline size_t wexpr_uvlq64_bytesize(uint64_t value)
 {
 	// we get 7 bits per byte. 2^7 for each
-	static const uint64_t v2_to_7  = 2*2*2*2*2*2*2;      // 2^7
-	static const uint64_t v2_to_14 = v2_to_7 * v2_to_7;  // 2^14
-	static const uint64_t v2_to_21 = v2_to_14 * v2_to_7; // 2^21
-	static const uint64_t v2_to_28 = v2_to_21 * v2_to_7; // 2^28
-	static const uint64_t v2_to_35 = v2_to_28 * v2_to_7; // 2^35
-	static const uint64_t v2_to_42 = v2_to_35 * v2_to_7; // 2^42
-	static const uint64_t v2_to_49 = v2_to_42 * v2_to_7; // 2^49
-	static const uint64_t v2_to_56 = v2_to_49 * v2_to_7; // 2^56
-	static const uint64_t v2_to_63 = v2_to_56 * v2_to_7; // 2^63
+	const uint64_t v2_to_7  = 2*2*2*2*2*2*2;      // 2^7
+	const uint64_t v2_to_14 = v2_to_7 * v2_to_7;  // 2^14
+	const uint64_t v2_to_21 = v2_to_14 * v2_to_7; // 2^21
+	const uint64_t v2_to_28 = v2_to_21 * v2_to_7; // 2^28
+	const uint64_t v2_to_35 = v2_to_28 * v2_to_7; // 2^35
+	const uint64_t v2_to_42 = v2_to_35 * v2_to_7; // 2^42
+	const uint64_t v2_to_49 = v2_to_42 * v2_to_7; // 2^49
+	const uint64_t v2_to_56 = v2_to_49 * v2_to_7; // 2^56
+	const uint64_t v2_to_63 = 9223372036854775808ULL; // 2^63
 	
 	if (value < v2_to_7)  { return 1; } // NOLINT: reasonable magic number
 	if (value < v2_to_14) { return 2; } // NOLINT: reasonable magic number

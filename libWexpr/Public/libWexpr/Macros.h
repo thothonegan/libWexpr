@@ -62,6 +62,12 @@
 	#define LIBWEXPR_IMPORT
 #endif
 
+#if defined(_MSC_VER)
+	#define LIBWEXPR_STRDUP(var) _strdup(var)
+#else
+	#define LIBWEXPR_STRDUP(var) strdup(var)
+#endif
+
 // LIBWEXPR_PUBLIC will export/import as needed
 
 #if defined(CATALYST_libWexpr_IS_SHARED_LIBRARY)

@@ -37,11 +37,10 @@
 #include "UnitTest.h"
 WEXPR_UNITTEST_BEGIN(UVLQ64CanEncodeDecode)
 	// simple tests
-	static const unsigned int TempBufferCount = 10;
-	uint8_t tempBuffer[TempBufferCount];
-	
+
 	// NOLINTNEXTLINE: test constants
 	const uint64_t x[] = { 0x7f, 0x4000, 0, 0x3ffffe, 0x1fffff, 0x200000, 0x3311a1234df31413ULL};
+	uint8_t tempBuffer[10]; // NOLINT: test size
 	
 	for (int j=0; j < sizeof(x)/sizeof(uint64_t); ++j)
 	{
