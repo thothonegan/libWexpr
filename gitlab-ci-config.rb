@@ -2,7 +2,8 @@ HGUILD_PROJECT="libWexpr"
 HGUILD_PROFILES={
 	"Linux-X86_64@Clang@@" => ["Debug", "Release"],
 	"macOS-ARM64@Clang@@" => ["Debug", "RelWithDebInfo"],
-	"macOS-ARM64@Clang@macOS-X86_64@" => ["Debug", "RelWithDebInfo"]
+	"macOS-ARM64@Clang@macOS-X86_64@" => ["Debug", "RelWithDebInfo"],
+	"Windows-X86_64@MSVC17@@" => ["Debug", "RelWithDebInfo"]
 }
 
 GITLABCI_SCHEDULER="Support/gitlabScheduler.rb"
