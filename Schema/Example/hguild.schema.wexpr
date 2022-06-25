@@ -1,0 +1,166 @@
+@(
+	$id "https://wexpr.hackerguild.com/schemas/HGuild/hguild.schema.wexpr"
+	$schema "https://wexpr.hackerguild.com/schemas/Core/1.schema.wexpr"
+	title "hguild.wexpr schema"
+	description "Schema for hguild.wexpr repository management"
+	
+	$refs @(
+		; will provide the main Wexpr types
+		Wexpr "https://wexpr.hackerguild.com/versions/1/Types.schema.wexpr"
+	)
+	
+	$types @(
+		; --- Enums
+		
+		BuildMethod @(
+			type Wexpr::EnumeratedValue
+			possibleValues #(
+				"build.rb"
+				"catalyst"
+			)
+		)
+		
+		DependencyType @(
+			type Wexpr::EnumeratedValue
+			possibleValues #(
+				"repository"
+				"systempkg"
+			)
+		)
+		
+		; --- Full types
+		
+		DependencyProvider @(
+			type Wexpr::Map
+			description "A single provider for a dependency"
+			
+			properties @(
+				provider @(
+					type Wexpr::Value
+					description "The name of the provider to search for the dependency in"
+					required true
+				)
+				
+				name @(
+					type Wexpr::Value
+					description "The name of the dependency in the provider, if it differs from the dependency's name"
+				)
+			)
+		)
+		
+		Dependency @(
+			type map
+			description "A single dependency for the project"
+			
+			properties @(
+				type @(
+					type DependencyType
+					description "The type of the dependency"
+					required true
+				)
+				
+				name @(
+					type Wexpr::Value
+					description "The name of the dependency - might have meaning based on type"
+					required true
+				)
+				
+				revision @(
+					type Wexpr::Value
+					description "The revision of the dependency we require [type=repository]"
+					requiredIf #(
+						equals #(type "repository")
+					)
+				)
+				
+				operatingSystems @(
+					type Wexpr::Array
+					description "List of operating system this dependency is required on."
+					itemType value
+				)
+				
+				providers @(
+					type Wexpr::Array
+					description "List of providers that provides the package [type=systempkg]"
+					itemType any
+				)
+			)
+		)
+		
+		RunCommand @(
+			type map
+			description "A single command to run"
+			
+			properties @(
+				command @(
+					type Wexpr::Value
+					description "The command to perform. May contain ${ARGS} to pass more arguments to the command"
+				)
+			)
+		)
+		
+		Template @(
+			type map
+			description "A copyable template in the project"
+			
+			properties @(
+				source @(
+					type Wexpr::Value
+					description "The directory containing the template"
+				)
+				
+				replacements @(
+					type Wexpr::Array
+					itemType Wexpr::Value
+					description "Text strings to be replaced - each one will be filled in with the corresponding argument"
+				)
+			)
+		)
+		
+		Root @(
+			type map
+			description "The root hguild.wexpr file"
+			
+			properties @(
+				package @(
+					type Wexpr::Value
+					description "The name of the hguild package"
+				)
+				
+				buildMethod @(
+					type BuildMethod
+					description "The method to build the package"
+				)
+				
+				dependencies @(
+					type Wexpr::Array
+					itemType Dependency
+				)
+				
+				runCommands @(
+					type Wexpr::Map
+					
+					patternProperties @(
+						"^.+$" @(
+							type RunCommand
+							description "A single run command, ran with the property name"
+						)
+					)
+					
+					; additionalProperties "warn" (default) or "error" to fail it out
+				)
+				
+				templates @(
+					type Wexpr::Map
+					
+					patternProperties @(
+						"^.+$" @(
+							type Template
+							description "A template that can be used from the project"
+						)
+					)
+				)
+			)
+		)
+	)
+) 

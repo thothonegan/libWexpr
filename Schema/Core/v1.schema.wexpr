@@ -1,0 +1,65 @@
+; Wexpr schemas are based on json's schema format, but converted to wexpr
+; Validation can be ran at compile timet o make sure its compiled
+; WexprTool can validate
+
+; Wexpr schema
+@(
+	$id "https://wexpr.hackerguild.com/versions/1.schema.wexpr"
+	$schema "https://wexpr.hackerguild.com/versions/1.schema.wexpr"
+	
+	title "Core Wexpr Schema"
+	description "Provides a schema for Wexpr schemas"
+	
+	$types @(
+		; default types are automatically added:
+		; - Value
+		; - Map
+		; - Array
+		
+		SchemaObject @(
+		
+		)
+		
+		Root @(
+			$id @(
+				type value
+				description "Id to refer to the schema"
+				required true
+			)
+			
+			$schema @(
+				type value
+				description "Source path to the version of the schema being used"
+				required true
+			)
+			
+			title @(
+				type value
+				description "Title of the schema"
+				required true
+			)
+			
+			description @(
+				type value
+				description "Description of the schema"
+				required true
+			)
+			
+			rootType @(
+				type typeName
+				description "The type of the root object in the wexpr document"
+				required true
+			)
+			
+			properties @(
+				type object
+				description "The list of properties"
+				
+				properties @(
+				)
+			)
+		)
+	)
+	
+	rootType Root
+)
