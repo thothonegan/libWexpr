@@ -32,6 +32,7 @@
 #ifndef WEXPRTOOL_COMMANDLINEPARSER_HPP
 #define WEXPRTOOL_COMMANDLINEPARSER_HPP
 
+#include <map>
 #include <string>
 
 //
@@ -66,6 +67,20 @@ class CommandLineParser
 			Command command = Command::HumanReadable;
 			std::string inputPath = "-";
 			std::string outputPath = "-";
+
+			//
+			// Can be 3 different types of values:
+			// - if blank, ignore and dont try to validate as a schema
+			// - if "(internal)", grab the root object's $schema, and use that.
+			// - if anything else, load it as either a filepath or a url as the root schema.
+			std::string schemaPath = "";
+
+			//
+			// List of schema mappings
+			// Will map the given schema IDs to a different path to load. 
+			// If the schema is loaded, it'll use the mapping's path instead of the ID.
+			//
+			std::map<std::string, std::string> schemaMappings;
 		};
 		
 		//
@@ -79,6 +94,11 @@ class CommandLineParser
 		static void displayHelp(int argc, char** argv);
 		
 	private:
+		//
+		/// \brief Add a schema mapping from the wexpr string array.
+		/// \return true if success, false if not
+		//
+		static bool p_addMappingFromWexprString (Results& res, const std::string& mappingStr);
 };
 
 #endif // WEXPRTOOL_COMMANDLINEPARSER_HPP

@@ -18,7 +18,7 @@ project (WexprTool)
 
 	if (CATALYST_INSTALL_PREFIX)
 		catalyst_begin_console_executable (WexprTool ${WexprTool_PRIVATE_HEADERS} ${WexprTool_SOURCES})
-			catalyst_module_use (WexprTool libWexpr)
+			catalyst_module_use (WexprTool libWexpr libWexprSchema)
 			catalyst_target_require_cxx_standard (WexprTool 11)
 
 			catalyst_append_target_property (WexprTool COMPILE_DEFINITIONS "ENABLE_CURL")
@@ -37,7 +37,7 @@ project (WexprTool)
 			"${WexprTool_SOURCE_DIR}/../libWexpr/Public"
 		)
 
-		target_link_libraries (WexprTool libWexpr)
+		target_link_libraries (WexprTool libWexpr libWexprSchema)
 
 		if (Curl_FOUND)
 			target_link_libraries (WexprTool CURL::libcurl)

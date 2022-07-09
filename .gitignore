@@ -29,3 +29,5 @@
 # Windows thumbs
 Thumbs.db
 
+# VSCode
+.vscode
