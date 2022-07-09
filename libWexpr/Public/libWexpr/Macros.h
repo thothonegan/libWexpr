@@ -1,6 +1,6 @@
 //
 /// \file libWexpr/Macros.h
-/// \brief A wexpr expression
+/// \brief Wexpr macros
 //
 // #LICENSE_BEGIN:MIT#
 // 

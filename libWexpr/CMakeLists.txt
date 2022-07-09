@@ -48,7 +48,7 @@ project (libWexpr)
 
 	set (libWexpr_SHAREDLIB_DEFINES
 		# similar to catalyst macros
-		CATALYST_libWexprIS_SHARED_LIBRARY=1
+		CATALYST_libWexpr_IS_SHARED_LIBRARY=1
 	)
 	
 	# if building for catalyst, build it as a module

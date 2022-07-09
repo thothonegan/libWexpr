@@ -1,0 +1,13 @@
+{
+	"name": "libWexprSchema",
+	"type": "cmodule",
+	"license" : {
+		"type" : "mit",
+		"files" : [
+			"LICENSE"
+		]
+	},
+	"dependent_modules" : [
+		"libWexpr"
+	]
+}
