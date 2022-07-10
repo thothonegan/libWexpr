@@ -10,6 +10,7 @@
 #define LIBWEXPRSCHEMA_LIBWEXPRSCHEMA_H
 
 #include "Macros.h"
+#include "Schema.h"
 
 #define LIBWEXPRSCHEMA_VERSION_MAJOR 1
 #define LIBWEXPRSCHEMA_VERSION_MINOR 0

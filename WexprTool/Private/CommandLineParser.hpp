@@ -73,7 +73,7 @@ class CommandLineParser
 			// - if blank, ignore and dont try to validate as a schema
 			// - if "(internal)", grab the root object's $schema, and use that.
 			// - if anything else, load it as either a filepath or a url as the root schema.
-			std::string schemaPath = "";
+			std::string schemaID = "";
 
 			//
 			// List of schema mappings

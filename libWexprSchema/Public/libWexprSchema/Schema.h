@@ -47,12 +47,17 @@ typedef struct WexprSchemaSchema_Callbacks
 	/// \brief Callback to get the path or url for a given schemaID.
 	/// If it returns null, or pathForSchemaID is null - it will use the schemaID itself as the path/url.
 	//
-	char* (*pathForSchemaID) (const char* schemaID);
+	const char* (*pathForSchemaID) (void* pathForSchemaIDUserData, const char* schemaID);
 
 	//
 	/// \brief The user data pointer to provide to the allocator functions.
 	//
 	void* allocatorUserData;
+
+	//
+	/// \brief The userdata pointer for pathForSchemaID
+	//
+	void* pathForSchemaIDUserData;
 
 } WexprSchemaSchema_Callbacks;
 

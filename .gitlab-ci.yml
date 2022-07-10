@@ -36,6 +36,16 @@ variables:
     rm $TempFile
     echo "END HGuild CI Setup"
 
+.hguild_sources_update: &hguild_sources_update |-
+    echo -e "section_start:`date +%s`:hguild_updating_sources\r\033[0KHGuild sources:update"
+    ${HGUILD} sources:update
+    echo -e "section_end:`date +%s`:hguild_updating_sources\r\033[0K"
+
+.hguild_sources_update_windows: &hguild_sources_update_windows |-
+    echo "HGuild sources:update"
+    & ./$env:HGUILD_WIN packages:update
+    echo "END HGuild sources:update"
+
 .hguild_packages_update: &hguild_packages_update |-
     echo -e "section_start:`date +%s`:hguild_updating_packages\r\033[0KHGuild packages:update"
     ${HGUILD} packages:update
@@ -46,23 +56,58 @@ variables:
     & ./$env:HGUILD_WIN packages:update
     echo "END HGuild packages:update"
 
+.hguild_setup_source_symlink: &hguild_setup_source_symlink |-
+    echo -e "section_start:`date +%s`:hguild_setup_source_symlink\r\033[0KHGuild setup symlink"
+    rm -fv _HGuild/Source/libWexpr@CI
+    ln -sv $CI_PROJECT_DIR _HGuild/Source/libWexpr@CI
+    echo -e "section_end:`date +%s`:hguild_setup_source_symlink\r\033[0K"
+
+.hguild_setup_source_symlink_windows: &hguild_setup_source_symlink_windows |-
+    echo "HGuild setup symlink"
+    If (Test-Path "_HGuild/Source/libWexpr@CI") { (Get-Item "_HGuild/Source/libWexpr@CI").Delete() }
+    New-Item -ItemType SymbolicLink -Target "$env:CI_PROJECT_DIR" -Path "_HGuild/Source/libWexpr@CI"
+    echo "END HGuild setup symlink"
+
+
 .hguild_before_script: &hguild_before_script
     - *hguild_setup_git
     - *hguild_setup_hguild
+    - *hguild_setup_source_symlink
     - *hguild_packages_update
+    - *hguild_sources_update
 
 .hguild_before_script_windows: &hguild_before_script_windows
     - *hguild_setup_git_windows
     - *hguild_setup_hguild_windows
+    - *hguild_setup_source_symlink_windows
     - *hguild_packages_update_windows
+    - *hguild_sources_update_windows
 
 .hguild_before_script_no_packages: &hguild_before_script_no_packages
     - *hguild_setup_git
     - *hguild_setup_hguild
+    - *hguild_setup_source_symlink
 
 .hguild_before_script_no_packages_windows: &hguild_before_script_no_packages_windows
     - *hguild_setup_git_windows
     - *hguild_setup_hguild_windows
+    - *hguild_setup_source_symlink_windows
+
+.runWolfTestsXUnit: &runWolfTestsXUnit
+    - |
+          for i in _HGuild/Install/$HGUILD_PROFILE/$HGUILD_BUILDTYPE/libWexpr@CI/Wolf/Tests/* ; do
+            name=$(basename "${i}")
+            echo ">> Running test: ${i}"
+            "${i}" --outputFormat xunit --output "${name}".xunit.xml
+          done
+
+.runWolfTestsXUnit_windows: &runWolfTestsXUnit_windows
+    - |
+        Get-ChildItem "_HGuild/Install/$($env:HGUILD_PROFILE)/$($env:HGUILD_BUILDTYPE)/libWexpr@CI/Wolf/Tests" -Filter *.exe | Foreach-Object {
+            Write-Output ">> Running $($_.FullName)"
+            & "$($_.FullName)" --outputFormat xunit --output "$($_.Basename).xunit.xml"
+        }
+
 
 stages:
     - prepare
@@ -102,7 +147,7 @@ Linux-X86_64@Clang@@~Debug:Prepare:
 
     script:
         - echo -e "section_start:`date +%s`:hguild_install_deps\r\033[0KHGuild Install Deps"
-        - '${HGUILD} install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . --dependenciesOnly ${HGUILD_PROJECT_NAME}@CI'
+        - '${HGUILD} install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --dependenciesOnly ${HGUILD_PROJECT_NAME}@CI'
         - echo -e "section_end:`date +%s`:hguild_install_deps\r\033[0K"
 
 
@@ -140,7 +185,7 @@ Linux-X86_64@Clang@@~Debug:Build:
 
     script:
         - echo -e "section_start:`date +%s`:hguild_build_and_install\r\033[0KHGuild Build and Install"
-        - '${HGUILD} install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . ${HGUILD_PROJECT_NAME}@CI'
+        - '${HGUILD} install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" ${HGUILD_PROJECT_NAME}@CI'
         - echo -e "section_end:`date +%s`:hguild_build_and_install\r\033[0K"
         # For at least eslint, it'll run as a different user, while the CI runs as root
         # thinlto.cache however doesnt allow read access to other users - adjust that just within CI
@@ -188,7 +233,7 @@ Linux-X86_64@Clang@@~Debug:Package:
 
     script:
         - echo -e "section_start:`date +%s`:hguild_package\r\033[0KHGuild Package"
-        - '${HGUILD} source:install:package --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . ${HGUILD_PROJECT_NAME}@CI ${PACKAGE_NAME}'
+        - '${HGUILD} source:install:package --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" ${HGUILD_PROJECT_NAME}@CI ${PACKAGE_NAME}'
         - echo -e "section_end:`date +%s`:hguild_package\r\033[0K"
 
 
@@ -269,7 +314,7 @@ Linux-X86_64@Clang@@~Release:Prepare:
 
     script:
         - echo -e "section_start:`date +%s`:hguild_install_deps\r\033[0KHGuild Install Deps"
-        - '${HGUILD} install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . --dependenciesOnly ${HGUILD_PROJECT_NAME}@CI'
+        - '${HGUILD} install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --dependenciesOnly ${HGUILD_PROJECT_NAME}@CI'
         - echo -e "section_end:`date +%s`:hguild_install_deps\r\033[0K"
 
 
@@ -307,7 +352,7 @@ Linux-X86_64@Clang@@~Release:Build:
 
     script:
         - echo -e "section_start:`date +%s`:hguild_build_and_install\r\033[0KHGuild Build and Install"
-        - '${HGUILD} install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . ${HGUILD_PROJECT_NAME}@CI'
+        - '${HGUILD} install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" ${HGUILD_PROJECT_NAME}@CI'
         - echo -e "section_end:`date +%s`:hguild_build_and_install\r\033[0K"
         # For at least eslint, it'll run as a different user, while the CI runs as root
         # thinlto.cache however doesnt allow read access to other users - adjust that just within CI
@@ -355,7 +400,7 @@ Linux-X86_64@Clang@@~Release:Package:
 
     script:
         - echo -e "section_start:`date +%s`:hguild_package\r\033[0KHGuild Package"
-        - '${HGUILD} source:install:package --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . ${HGUILD_PROJECT_NAME}@CI ${PACKAGE_NAME}'
+        - '${HGUILD} source:install:package --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" ${HGUILD_PROJECT_NAME}@CI ${PACKAGE_NAME}'
         - echo -e "section_end:`date +%s`:hguild_package\r\033[0K"
 
 
@@ -437,7 +482,7 @@ macOS-ARM64@Clang@@~Debug:Prepare:
 
     script:
         - echo -e "section_start:`date +%s`:hguild_install_deps\r\033[0KHGuild Install Deps"
-        - '${HGUILD} install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . --dependenciesOnly ${HGUILD_PROJECT_NAME}@CI'
+        - '${HGUILD} install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --dependenciesOnly ${HGUILD_PROJECT_NAME}@CI'
         - echo -e "section_end:`date +%s`:hguild_install_deps\r\033[0K"
 
 
@@ -475,7 +520,7 @@ macOS-ARM64@Clang@@~Debug:Build:
 
     script:
         - echo -e "section_start:`date +%s`:hguild_build_and_install\r\033[0KHGuild Build and Install"
-        - '${HGUILD} install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . ${HGUILD_PROJECT_NAME}@CI'
+        - '${HGUILD} install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" ${HGUILD_PROJECT_NAME}@CI'
         - echo -e "section_end:`date +%s`:hguild_build_and_install\r\033[0K"
         # For at least eslint, it'll run as a different user, while the CI runs as root
         # thinlto.cache however doesnt allow read access to other users - adjust that just within CI
@@ -523,7 +568,7 @@ macOS-ARM64@Clang@@~Debug:Package:
 
     script:
         - echo -e "section_start:`date +%s`:hguild_package\r\033[0KHGuild Package"
-        - '${HGUILD} source:install:package --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . ${HGUILD_PROJECT_NAME}@CI ${PACKAGE_NAME}'
+        - '${HGUILD} source:install:package --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" ${HGUILD_PROJECT_NAME}@CI ${PACKAGE_NAME}'
         - echo -e "section_end:`date +%s`:hguild_package\r\033[0K"
 
 
@@ -604,7 +649,7 @@ macOS-ARM64@Clang@@~RelWithDebInfo:Prepare:
 
     script:
         - echo -e "section_start:`date +%s`:hguild_install_deps\r\033[0KHGuild Install Deps"
-        - '${HGUILD} install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . --dependenciesOnly ${HGUILD_PROJECT_NAME}@CI'
+        - '${HGUILD} install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --dependenciesOnly ${HGUILD_PROJECT_NAME}@CI'
         - echo -e "section_end:`date +%s`:hguild_install_deps\r\033[0K"
 
 
@@ -642,7 +687,7 @@ macOS-ARM64@Clang@@~RelWithDebInfo:Build:
 
     script:
         - echo -e "section_start:`date +%s`:hguild_build_and_install\r\033[0KHGuild Build and Install"
-        - '${HGUILD} install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . ${HGUILD_PROJECT_NAME}@CI'
+        - '${HGUILD} install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" ${HGUILD_PROJECT_NAME}@CI'
         - echo -e "section_end:`date +%s`:hguild_build_and_install\r\033[0K"
         # For at least eslint, it'll run as a different user, while the CI runs as root
         # thinlto.cache however doesnt allow read access to other users - adjust that just within CI
@@ -690,7 +735,7 @@ macOS-ARM64@Clang@@~RelWithDebInfo:Package:
 
     script:
         - echo -e "section_start:`date +%s`:hguild_package\r\033[0KHGuild Package"
-        - '${HGUILD} source:install:package --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . ${HGUILD_PROJECT_NAME}@CI ${PACKAGE_NAME}'
+        - '${HGUILD} source:install:package --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" ${HGUILD_PROJECT_NAME}@CI ${PACKAGE_NAME}'
         - echo -e "section_end:`date +%s`:hguild_package\r\033[0K"
 
 
@@ -772,7 +817,7 @@ macOS-ARM64@Clang@macOS-X86_64@~Debug:Prepare:
 
     script:
         - echo -e "section_start:`date +%s`:hguild_install_deps\r\033[0KHGuild Install Deps"
-        - '${HGUILD} install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . --dependenciesOnly ${HGUILD_PROJECT_NAME}@CI'
+        - '${HGUILD} install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --dependenciesOnly ${HGUILD_PROJECT_NAME}@CI'
         - echo -e "section_end:`date +%s`:hguild_install_deps\r\033[0K"
 
 
@@ -810,7 +855,7 @@ macOS-ARM64@Clang@macOS-X86_64@~Debug:Build:
 
     script:
         - echo -e "section_start:`date +%s`:hguild_build_and_install\r\033[0KHGuild Build and Install"
-        - '${HGUILD} install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . ${HGUILD_PROJECT_NAME}@CI'
+        - '${HGUILD} install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" ${HGUILD_PROJECT_NAME}@CI'
         - echo -e "section_end:`date +%s`:hguild_build_and_install\r\033[0K"
         # For at least eslint, it'll run as a different user, while the CI runs as root
         # thinlto.cache however doesnt allow read access to other users - adjust that just within CI
@@ -858,7 +903,7 @@ macOS-ARM64@Clang@macOS-X86_64@~Debug:Package:
 
     script:
         - echo -e "section_start:`date +%s`:hguild_package\r\033[0KHGuild Package"
-        - '${HGUILD} source:install:package --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . ${HGUILD_PROJECT_NAME}@CI ${PACKAGE_NAME}'
+        - '${HGUILD} source:install:package --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" ${HGUILD_PROJECT_NAME}@CI ${PACKAGE_NAME}'
         - echo -e "section_end:`date +%s`:hguild_package\r\033[0K"
 
 
@@ -939,7 +984,7 @@ macOS-ARM64@Clang@macOS-X86_64@~RelWithDebInfo:Prepare:
 
     script:
         - echo -e "section_start:`date +%s`:hguild_install_deps\r\033[0KHGuild Install Deps"
-        - '${HGUILD} install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . --dependenciesOnly ${HGUILD_PROJECT_NAME}@CI'
+        - '${HGUILD} install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --dependenciesOnly ${HGUILD_PROJECT_NAME}@CI'
         - echo -e "section_end:`date +%s`:hguild_install_deps\r\033[0K"
 
 
@@ -977,7 +1022,7 @@ macOS-ARM64@Clang@macOS-X86_64@~RelWithDebInfo:Build:
 
     script:
         - echo -e "section_start:`date +%s`:hguild_build_and_install\r\033[0KHGuild Build and Install"
-        - '${HGUILD} install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . ${HGUILD_PROJECT_NAME}@CI'
+        - '${HGUILD} install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" ${HGUILD_PROJECT_NAME}@CI'
         - echo -e "section_end:`date +%s`:hguild_build_and_install\r\033[0K"
         # For at least eslint, it'll run as a different user, while the CI runs as root
         # thinlto.cache however doesnt allow read access to other users - adjust that just within CI
@@ -1025,7 +1070,7 @@ macOS-ARM64@Clang@macOS-X86_64@~RelWithDebInfo:Package:
 
     script:
         - echo -e "section_start:`date +%s`:hguild_package\r\033[0KHGuild Package"
-        - '${HGUILD} source:install:package --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . ${HGUILD_PROJECT_NAME}@CI ${PACKAGE_NAME}'
+        - '${HGUILD} source:install:package --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" ${HGUILD_PROJECT_NAME}@CI ${PACKAGE_NAME}'
         - echo -e "section_end:`date +%s`:hguild_package\r\033[0K"
 
 
@@ -1106,7 +1151,7 @@ Windows-X86_64@MSVC17@@~Debug:Prepare:
 
     script:
         - echo "HGuild Install Deps"
-        - '& ./$env:HGUILD_WIN install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . --dependenciesOnly ${HGUILD_PROJECT_NAME}@CI'
+        - '& ./$env:HGUILD_WIN install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --dependenciesOnly ${HGUILD_PROJECT_NAME}@CI'
         - echo "END HGuild Install Deps"
 
 
@@ -1143,7 +1188,7 @@ Windows-X86_64@MSVC17@@~Debug:Build:
 
     script:
         - echo "HGuild Build and Install"
-        - '& ./$env:HGUILD_WIN install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . ${HGUILD_PROJECT_NAME}@CI'
+        - '& ./$env:HGUILD_WIN install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" ${HGUILD_PROJECT_NAME}@CI'
         - echo "END HGuild Build and Install"
 
 
@@ -1187,7 +1232,7 @@ Windows-X86_64@MSVC17@@~Debug:Package:
 
     script:
         - echo "HGuild Package"
-        - '& ./$env:HGUILD_WIN source:install:package --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . ${HGUILD_PROJECT_NAME}@CI ${PACKAGE_NAME}'
+        - '& ./$env:HGUILD_WIN source:install:package --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" ${HGUILD_PROJECT_NAME}@CI ${PACKAGE_NAME}'
         - echo "END HGuild Package"
 
 
@@ -1269,7 +1314,7 @@ Windows-X86_64@MSVC17@@~RelWithDebInfo:Prepare:
 
     script:
         - echo "HGuild Install Deps"
-        - '& ./$env:HGUILD_WIN install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . --dependenciesOnly ${HGUILD_PROJECT_NAME}@CI'
+        - '& ./$env:HGUILD_WIN install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --dependenciesOnly ${HGUILD_PROJECT_NAME}@CI'
         - echo "END HGuild Install Deps"
 
 
@@ -1306,7 +1351,7 @@ Windows-X86_64@MSVC17@@~RelWithDebInfo:Build:
 
     script:
         - echo "HGuild Build and Install"
-        - '& ./$env:HGUILD_WIN install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . ${HGUILD_PROJECT_NAME}@CI'
+        - '& ./$env:HGUILD_WIN install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" ${HGUILD_PROJECT_NAME}@CI'
         - echo "END HGuild Build and Install"
 
 
@@ -1350,7 +1395,7 @@ Windows-X86_64@MSVC17@@~RelWithDebInfo:Package:
 
     script:
         - echo "HGuild Package"
-        - '& ./$env:HGUILD_WIN source:install:package --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . ${HGUILD_PROJECT_NAME}@CI ${PACKAGE_NAME}'
+        - '& ./$env:HGUILD_WIN source:install:package --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" ${HGUILD_PROJECT_NAME}@CI ${PACKAGE_NAME}'
         - echo "END HGuild Package"
 
 
@@ -1476,7 +1521,7 @@ CodeQualityClangTidy:
 
     script:
         - echo -e "section_start:`date +%s`:hguild_install_deps\r\033[0KHGuild Install Deps"
-        - '${HGUILD} install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --customSourceDir . --dependenciesOnly ${HGUILD_PROJECT_NAME}@CI'
+        - '${HGUILD} install --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" --dependenciesOnly ${HGUILD_PROJECT_NAME}@CI'
         - echo -e "section_end:`date +%s`:hguild_install_deps\r\033[0K"
         - echo -e "section_start:`date +%s`:run_scheduler\r\033[0KRun clang-tidy coverage"
         - export BUILD_DIR=`${HGUILD} source:buildPath --buildType "${HGUILD_BUILDTYPE}" --profile "${HGUILD_PROFILE}" ${HGUILD_SOURCENAME}`

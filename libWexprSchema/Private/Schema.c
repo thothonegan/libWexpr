@@ -25,8 +25,9 @@ static void s_defaultDealloc (void* allocatorUserData, void* ptr)
 	free(ptr);
 }
 
-static char* s_defaultPathForSchemaID (const char* schemaID)
+static const char* s_defaultPathForSchemaID (void* userData, const char* schemaID)
 {
+	(void)userData;
 	return LIBWEXPR_NULLPTR;
 }
 
@@ -52,7 +53,8 @@ WexprSchemaSchema* wexprSchema_Schema_createFromSchemaID(const char* schemaID, W
 		/* alloc = */             &s_defaultAlloc,
 		/* dealloc = */           &s_defaultDealloc,
 		/* pathForSchemaID = */   &s_defaultPathForSchemaID,
-		/* allocatorUserData = */ LIBWEXPR_NULLPTR
+		/* allocatorUserData = */ LIBWEXPR_NULLPTR,
+		/* pathForSchemaIDUserData = */ LIBWEXPR_NULLPTR
 	};
 
 	// move over the values that were set
@@ -62,6 +64,7 @@ WexprSchemaSchema* wexprSchema_Schema_createFromSchemaID(const char* schemaID, W
 		if (callbacks->dealloc) { c.dealloc = callbacks->dealloc; }
 		if (callbacks->pathForSchemaID) { c.pathForSchemaID = callbacks->pathForSchemaID; }
 		if (callbacks->allocatorUserData) { c.allocatorUserData = callbacks->allocatorUserData; }
+		if (callbacks->pathForSchemaIDUserData) { c.pathForSchemaIDUserData = callbacks->pathForSchemaIDUserData; } 
 	}
 
 	WexprSchemaSchema* self = c.alloc(c.allocatorUserData, sizeof(WexprSchemaSchema));
@@ -79,7 +82,7 @@ WexprSchemaSchema* wexprSchema_Schema_createFromSchemaID(const char* schemaID, W
 
 void wexprSchema_Schema_destroy(WexprSchemaSchema* self)
 {
-
+	self->m_callbacks.dealloc(self->m_callbacks.allocatorUserData, self);
 }
 
 // --- public Validation

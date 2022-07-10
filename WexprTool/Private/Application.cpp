@@ -32,6 +32,7 @@
 #include "CommandLineParser.hpp"
 
 #include <libWexpr/libWexpr.h>
+#include <libWexprSchema/libWexprSchema.h>
 
 #include <cstdlib>
 #include <cstring>
@@ -300,6 +301,52 @@ int main (int argc, char** argv)
 		
 		WEXPR_ERROR_FREE (err);
 		
+		// do schema validation if needed
+		if (results.schemaID != "")
+		{
+			WexprSchemaSchema_Callbacks callbacks = {};
+			callbacks.pathForSchemaID = [](void* pathForSchemaIDUserData, const char* schemaID) -> const char*
+			{
+				auto schemaMappings = reinterpret_cast<std::map<std::string, std::string>*> (pathForSchemaIDUserData);
+				auto iter = schemaMappings->find(schemaID);
+				if (iter != schemaMappings->end())
+					return iter->second.c_str();
+				
+				return nullptr;
+			};
+			callbacks.pathForSchemaIDUserData = &(results.schemaMappings);
+
+			WexprSchemaError* schemaError = nullptr;
+			WexprSchemaSchema* schema = wexprSchema_Schema_createFromSchemaID(
+				results.schemaID.c_str(),
+				&callbacks,
+				&schemaError
+			);
+
+			if (!schema || schemaError)
+			{
+				if (isValidate)
+				{
+					s_writeAllOutputTo(results.outputPath, "false\n");
+				}
+				else
+				{
+					std::cerr << "WexprTool: Error when loading schema for validation " << std::endl;
+					WexprSchemaError* serr = schemaError;
+					while (serr)
+					{
+						std::cerr << "WexprTool: "
+							<< wexprSchema_Error_objectPath(serr) << ": "
+							<< wexprSchema_Error_message(serr) << std::endl;
+						
+						serr = wexprSchema_Error_nextError(serr);
+					}
+				}
+				
+				return EXIT_FAILURE;
+			}
+		}
+
 		if (isValidate)
 		{
 			s_writeAllOutputTo(results.outputPath, "true\n");

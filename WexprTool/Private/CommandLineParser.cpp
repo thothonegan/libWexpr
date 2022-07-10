@@ -97,7 +97,7 @@ CommandLineParser::Results CommandLineParser::parse(int argc, char ** argv)
 		{
 			if ((argIndex+1) < argc)
 			{
-				r.schemaPath = argv[argIndex+1];
+				r.schemaID = argv[argIndex+1];
 				++argIndex;
 			}
 		}
