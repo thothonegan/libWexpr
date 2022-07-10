@@ -86,5 +86,5 @@ void wexprSchema_Schema_destroy(WexprSchemaSchema* self)
 
 bool wexprSchema_Schema_validateExpression(WexprExpression* expression, WexprSchemaError** error)
 {
-
+	return false;
 }

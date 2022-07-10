@@ -53,9 +53,12 @@ WexprSchemaError* wexprSchema_Error_create(
 )
 {
 	WexprSchemaError* self = malloc(sizeof(WexprSchemaError));
+	if (self == LIBWEXPR_NULLPTR)
+		return LIBWEXPR_NULLPTR;
+
 	self->m_code = code;
-	self->m_objectPath = strdup(objectPath);
-	self->m_message = strdup(message);
+	self->m_objectPath = LIBWEXPR_STRDUP(objectPath);
+	self->m_message = LIBWEXPR_STRDUP(message);
 	self->m_nextError = LIBWEXPR_NULLPTR;
 
 	return self;
@@ -112,7 +115,8 @@ void wexprSchema_Error_appendError(WexprSchemaError* self, WexprSchemaError* err
 {
 	if (self->m_nextError)
 	{
-		return wexprSchema_Error_appendError(self->m_nextError, errorToAppend);
+		wexprSchema_Error_appendError(self->m_nextError, errorToAppend);
+		return;
 	}
 
 	self->m_nextError = errorToAppend;
