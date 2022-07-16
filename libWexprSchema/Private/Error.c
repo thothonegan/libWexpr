@@ -49,7 +49,8 @@ struct WexprSchemaError
 WexprSchemaError* wexprSchema_Error_create(
 	WexprSchemaErrorCode code,
 	const char* objectPath,
-	const char* message
+	const char* message,
+	WexprSchemaError* nextErrorIfAny
 )
 {
 	WexprSchemaError* self = malloc(sizeof(WexprSchemaError));
@@ -59,7 +60,7 @@ WexprSchemaError* wexprSchema_Error_create(
 	self->m_code = code;
 	self->m_objectPath = LIBWEXPR_STRDUP(objectPath);
 	self->m_message = LIBWEXPR_STRDUP(message);
-	self->m_nextError = LIBWEXPR_NULLPTR;
+	self->m_nextError = nextErrorIfAny;
 
 	return self;
 }

@@ -6,7 +6,7 @@
 
 	$refs @(
 		; will provide the main Wexpr types
-		Wexpr "https://wexpr.hackerguild.com/versions/1/Types.schema.wexpr"
+		Wexpr "https://wexpr.hackerguild.com/schemas/Core/v1.schema.wexpr"
 	)
 
 	$types @(
@@ -15,28 +15,28 @@
 		Point @(
 			type Wexpr::Map
 			description "A point"
-			additionalProperties false
+			mapAdditionalProperties false
 
-			properties @(
+			mapProperties @(
 				$schema @(
-					type Wexpr::SchemaId
+					type Wexpr::SchemaID
 					description "The Id of the schema"
 				)
 
 				x @(
-					type Wexpr::FloatValue
+					type Wexpr::RealNumber
 					description "The X coordinate of the point"
 					required true
 				)
 
 				y @(
-					type Wexpr::FloatValue
+					type Wexpr::RealNumber
 					description "The Y coordinate of the point"
 					required true
 				)
 
 				z @(
-					type Wexpr::FloatValue
+					type Wexpr::RealNumber
 					description "The Z coordinate of the point"
 					required true
 				)

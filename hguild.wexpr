@@ -8,6 +8,7 @@
 	)
 	
 	runCommands @(
+		WexprTool_gdb @(command "gdb --args ${INSTALL_PATH}/Tools/WexprTool ${ARGS}")
 		WexprTool @(command "${INSTALL_PATH}/Tools/WexprTool ${ARGS}")
 	)
 )

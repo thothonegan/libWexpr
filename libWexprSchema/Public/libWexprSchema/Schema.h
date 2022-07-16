@@ -13,6 +13,7 @@
 
 #include "Error.h"
 #include "Macros.h"
+#include "Type.h"
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -80,15 +81,32 @@ void wexprSchema_Schema_destroy(WexprSchemaSchema* self);
 
 /// \}
 
-/// \name Validation
+/// \name Properties
+/// \see WexprSchemaSchema
 /// \{
 
+//
+/// \brief Return the root type of the schema
+//
+WexprSchemaType* wexprSchema_Schema_rootType (WexprSchemaSchema* self);
+
+//
+/// \brief Resolve the given name using the schema's types.
+/// Returns null if unable to locate the type.
+//
+WexprSchemaType* wexprSchema_Schema_typeWithName(WexprSchemaSchema* self, const char* name);
+
+/// \}
+
+/// \name Validation
+/// \see WexprSchemaSchema
+/// \{
 
 //
 /// \brief Validate the given expression with the loaded schema. Will return true/false, and will store
 /// the failures if we are given a location to put the resulting error.
 //
-bool wexprSchema_Schema_validateExpression(WexprExpression* expression, WexprSchemaError** error);
+bool wexprSchema_Schema_validateExpression(WexprSchemaSchema* self, WexprExpression* expression, WexprSchemaError** error);
 
 /// \}
 

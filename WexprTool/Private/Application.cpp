@@ -304,6 +304,32 @@ int main (int argc, char** argv)
 		// do schema validation if needed
 		if (results.schemaID != "")
 		{
+			auto schemaID = results.schemaID;
+			if (schemaID == "(internal)")
+			{
+				auto rootType = wexpr_Expression_type(expr);
+				if (rootType != WexprExpressionTypeMap)
+				{
+					std::cerr << "WexprTool: Using schema (internal) but root wasn't a map" << std::endl;
+					return EXIT_FAILURE;
+				}
+				
+				auto schemaValue = wexpr_Expression_mapValueForKey(expr, "$schema");
+				if (schemaValue == nullptr)
+				{
+					std::cerr << "WexprTool: Using schema (internal) but $schema didn't exist on the root map." << std::endl;
+					return EXIT_FAILURE;
+				}
+
+				if (wexpr_Expression_type(schemaValue) != WexprExpressionTypeValue)
+				{
+					std::cerr << "WexprTool: Using schema (internal) but $schema wasn't a value on the root map." << std::endl;
+					return EXIT_FAILURE;
+				}
+
+				schemaID = std::string(wexpr_Expression_value(schemaValue));
+			}
+
 			WexprSchemaSchema_Callbacks callbacks = {};
 			callbacks.pathForSchemaID = [](void* pathForSchemaIDUserData, const char* schemaID) -> const char*
 			{
@@ -318,7 +344,7 @@ int main (int argc, char** argv)
 
 			WexprSchemaError* schemaError = nullptr;
 			WexprSchemaSchema* schema = wexprSchema_Schema_createFromSchemaID(
-				results.schemaID.c_str(),
+				schemaID.c_str(),
 				&callbacks,
 				&schemaError
 			);
@@ -343,6 +369,30 @@ int main (int argc, char** argv)
 					}
 				}
 				
+				return EXIT_FAILURE;
+			}
+
+			bool didValidate = wexprSchema_Schema_validateExpression(schema, expr, &schemaError);
+			if (!didValidate || schemaError)
+			{
+				if (isValidate)
+				{
+					s_writeAllOutputTo(results.outputPath, "false\n");
+				}
+				else
+				{
+					std::cerr << "WexprTool: Error when validating against schema " << std::endl;
+					WexprSchemaError* serr = schemaError;
+					while (serr)
+					{
+						std::cerr << "WexprTool: "
+							<< wexprSchema_Error_objectPath(serr) << ": error: "
+							<< wexprSchema_Error_message(serr) << std::endl;
+						
+						serr = wexprSchema_Error_nextError(serr);
+					}
+				}
+
 				return EXIT_FAILURE;
 			}
 		}

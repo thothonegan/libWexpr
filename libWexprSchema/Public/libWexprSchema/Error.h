@@ -71,7 +71,8 @@ typedef struct WexprSchemaError WexprSchemaError;
 WexprSchemaError* wexprSchema_Error_create(
 	WexprSchemaErrorCode code,
 	const char* objectPath,
-	const char* message
+	const char* message,
+	WexprSchemaError* nextErrorIfAny
 );
 
 //

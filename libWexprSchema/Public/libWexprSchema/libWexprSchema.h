@@ -11,6 +11,8 @@
 
 #include "Macros.h"
 #include "Schema.h"
+#include "Twine.h"
+#include "Type.h"
 
 #define LIBWEXPRSCHEMA_VERSION_MAJOR 1
 #define LIBWEXPRSCHEMA_VERSION_MINOR 0
