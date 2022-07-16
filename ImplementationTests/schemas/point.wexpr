@@ -5,7 +5,7 @@
 	description "Schema for points"
 
 	$refs @(
-		; will provie the main Wexpr types
+		; will provide the main Wexpr types
 		Wexpr "https://wexpr.hackerguild.com/versions/1/Types.schema.wexpr"
 	)
 
