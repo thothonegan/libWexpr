@@ -31,6 +31,10 @@
 		Map @(
 			primitiveType "map"
 			description "A map of values"
+			
+			; A map itself allows additional properties (since it just has to meet the map).
+			; This wont affect derived types, which will by default limit.
+			mapAdditionalProperties true
 		)
 
 		BinaryData @(
@@ -102,9 +106,9 @@
 					description "The description of the instance of the type"
 				)
 
-				required @(
+				optional @(
 					type Boolean
-					description "If true, this specific instance is required within its context. Default is false."
+					description "If false, this specific instance is required within its context. Default is false."
 				)
 			)
 		)
@@ -160,13 +164,11 @@
 					)
 				)
 
-				mapAdditionalProperties @(
+				mapAllowAdditionalProperties @(
 					type Boolean
-					description "If false, properties not listed in 'mapProperties' will fail validation. Default is true (allow unknown properties)."
+					description "If true, properties not listed in 'mapProperties' will be ignored. Default is false (dont allow unknown properties)."
 				)
 			)
-
-			mapAdditionalProperties false
 		)
 		
 		SchemaRoot @(
@@ -176,30 +178,27 @@
 				$id @(
 					type SchemaID
 					description "Id to refer to the schema"
-					required true
 				)
 				
 				$schema @(
 					type SchemaID
 					description "Source path to the version of the schema being used"
-					required true
 				)
 				
 				title @(
 					type Value
 					description "Title of the schema"
-					required true
 				)
 				
 				description @(
 					type Value
 					description "Description of the schema"
-					required true
 				)
 				
 				$refs @(
 					type Map
 					description "Possible references to other schemas"
+					optional true
 
 					mapKeyType SchemaID
 					mapAllProperties @(
@@ -211,12 +210,12 @@
 				rootType @(
 					type SchemaTypeName
 					description "The type of the root object in the wexpr document"
-					required true
 				)
 				
-				properties @(
+				$types @(
 					type Map
-					description "The list of properties"
+					description "The list of types available"
+					optional true
 					
 					mapKeyType SchemaSimpleTypeName
 					mapAllProperties @(

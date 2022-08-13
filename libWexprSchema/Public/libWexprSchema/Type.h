@@ -23,7 +23,7 @@ LIBWEXPR_EXTERN_C_BEGIN()
 struct WexprSchemaSchema;
 
 //
-/// \brief A type within a schema to validate
+/// \brief A type within a schema to validate (SchemaTypeDefinition)
 //
 typedef struct WexprSchemaType WexprSchemaType;
 
@@ -100,9 +100,9 @@ WexprSchemaPrimitiveType wexprSchema_Type_primitiveTypes(WexprSchemaType* self);
 /// \{
 
 //
-/// \brief Valiate the given object acgainst this Type
-///
-/// \return Success or failure
+/// \brief Valiate the given object against this Type
+/// Expression can be null if theirs no expression on the other side
+/// \return Success or failure. If failure, the reason should be within error (if provided).
 //
 bool wexprSchema_Type_validateObject (
 	WexprSchemaType* self,

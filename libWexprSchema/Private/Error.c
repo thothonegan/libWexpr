@@ -41,6 +41,7 @@ struct WexprSchemaError
 	WexprSchemaErrorCode m_code; ///< The general code for the error
 	char* m_objectPath; ///< Must be freed if set
 	char* m_message; ///< Must be freed if set.
+	WexprSchemaError* m_childError; ///< If set, the child error in the chain and is owned by this error
 	WexprSchemaError* m_nextError; ///< If set, the next error in the chain and is owned by this error
 };
 
@@ -50,6 +51,7 @@ WexprSchemaError* wexprSchema_Error_create(
 	WexprSchemaErrorCode code,
 	const char* objectPath,
 	const char* message,
+	WexprSchemaError* childErrorIfAny,
 	WexprSchemaError* nextErrorIfAny
 )
 {
@@ -60,6 +62,7 @@ WexprSchemaError* wexprSchema_Error_create(
 	self->m_code = code;
 	self->m_objectPath = LIBWEXPR_STRDUP(objectPath);
 	self->m_message = LIBWEXPR_STRDUP(message);
+	self->m_childError = childErrorIfAny;
 	self->m_nextError = nextErrorIfAny;
 
 	return self;
@@ -67,6 +70,12 @@ WexprSchemaError* wexprSchema_Error_create(
 
 void wexprSchema_Error_destroy(WexprSchemaError* self)
 {
+	if (self->m_childError)
+	{
+		wexprSchema_Error_destroy(self->m_childError);
+		self->m_childError = LIBWEXPR_NULLPTR;
+	}
+	
 	if (self->m_nextError)
 	{
 		wexprSchema_Error_destroy(self->m_nextError);
@@ -103,6 +112,16 @@ const char* wexprSchema_Error_objectPath (WexprSchemaError* self)
 const char* wexprSchema_Error_message (WexprSchemaError* self)
 {
 	return self->m_message;
+}
+
+WexprSchemaError* wexprSchema_Error_childError(WexprSchemaError* self)
+{
+	return self->m_childError;
+}
+
+void wexprSchema_Error_setChild(WexprSchemaError* self, WexprSchemaError* childError)
+{
+	self->m_childError = childError;
 }
 
 WexprSchemaError* wexprSchema_Error_nextError(WexprSchemaError* self)

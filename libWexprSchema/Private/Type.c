@@ -10,24 +10,27 @@
 
 #include <libWexprSchema/PrimitiveType.h>
 #include <libWexprSchema/Schema.h>
+#include <libWexprSchema/TypeInstance.h>
 
 #include <stdio.h>
 
+#include "../../libWexpr/Private/ThirdParty/c_hashmap/hashmap.h"
 #include "../../libWexpr/Private/ThirdParty/sglib/sglib.h"
+
+#include "TypeRef.h"
+
+// Turns on debug output to 
+// Format:
+// +++ Started a function call
+// --- Leaving a function call
+// >>> Performing a call into something
+// <<< Returned from the call
+// ... Other message
+//
+#define DEBUG_LOGSTDERR 0
 
 // --- structures
 
-typedef struct WexprSchemaTypePrivateTypeArrayElement
-{
-	char* typeName; // we own if exists, will only exist temporarily till we fill out type.
-	WexprSchemaType* type;  // we dont own - will be part of the schema that set us up.
-	struct WexprSchemaTypePrivateTypeArrayElement* next;
-} WexprSchemaTypePrivateTypeArrayElement;
-
-#define WEXPRSCHEMATYPEPRIVATETYPEARRAYELEMENT_COMPARATOR(e1, e2) ( (char*)(e1->type) - (char*)(e2->type))
-
-SGLIB_DEFINE_LIST_PROTOTYPES (WexprSchemaTypePrivateTypeArrayElement, WEXPRSCHEMATYPEPRIVATETYPEARRAYELEMENT_COMPARATOR, next)
-SGLIB_DEFINE_LIST_FUNCTIONS (WexprSchemaTypePrivateTypeArrayElement, WEXPRSCHEMATYPEPRIVATETYPEARRAYELEMENT_COMPARATOR, next)
 
 struct WexprSchemaType
 {
@@ -50,8 +53,185 @@ struct WexprSchemaType
 	//
 	/// \brief The parent types, of which we need to meet one of them (if any exist).
 	//
-	WexprSchemaTypePrivateTypeArrayElement* m_types;
+	WexprSchemaPrivateTypeRef* m_types;
+	
+	// -------------- Common
+	
+	//
+	/// \brief Is this element optional? (default false)
+	//
+	bool m_optional;
+	
+	// ------------- Value
+	
+	//
+	/// \brief If set, the regular expression the value must match to be valid
+	//
+	void* m_valueRegex;
+	
+	// ------------- Array
+	
+	//
+	/// \brief Type definition that all array elements must meet
+	//
+	void* m_arrayAllElements;
+	
+	// ------------- Map
+	
+	//
+	/// \brief List of map properties that we have defined
+	/// Type is WexprSchemaType_MapProperty
+	//
+	map_t m_mapProperties;
+	
+	//
+	/// \biref List of rules that every map entry must meet
+	//
+	void* m_mapAllProperties;
+	
+	//
+	/// \brief Are additional properties outside the 'mapProperties' allowed? Default is false
+	//
+	bool m_mapAdditionalProperties;
 };
+
+typedef struct WexprSchemaType_MapProperty
+{
+	char* key; // strdup, we own 
+	WexprSchemaTypeInstance* value;;
+} WexprSchemaType_MapProperty;
+
+// --- private internals
+
+static int s_freeMapPropertiesHashData (any_t userData, any_t data)
+{
+	WexprSchemaType_MapProperty* elem = data;
+	free(elem->key);
+	return MAP_OK;
+}
+
+typedef struct ResolveMapPropertiesParams
+{
+	WexprSchemaSchema* schema;
+	WexprSchemaError** error;
+} ResolveMapPropertiesParams;
+
+static int s_resolveMapProperties (any_t userData, any_t data)
+{
+	ResolveMapPropertiesParams* params = userData;
+	WexprSchemaType_MapProperty* elem = data;
+	wexprSchema_TypeInstance_resolveWithSchema(elem->value, params->schema, params->error);
+	
+	return MAP_OK;
+}
+
+// Validate a value object whos rules should match the current SchemaType
+static bool s_wexprSchema_Type_validateValue(
+	WexprSchemaType* self,
+	WexprSchemaTwine* objectPath,
+	WexprExpression* expression,
+	WexprSchemaError** error
+)
+{
+#if DEBUG_LOGSTDERR
+	char debugLogBuffer[1024] = {};
+	int outDebugBufferLength = 0;
+	
+	//wexprSchema_Twine_resolveToCString(objectPath, debugLogBuffer, sizeof(debugLogBuffer), &outDebugBufferLength);
+	fprintf(stderr, "+++ TODO: Validate value\n");
+#endif
+	
+	return true;
+}
+
+// Validate an array object whos rules should match the current SchemaType
+static bool s_wexprSchema_Type_validateArray (
+	WexprSchemaType* self,
+	WexprSchemaTwine* objectPath,
+	WexprExpression* expression,
+	WexprSchemaError** error
+)
+{
+#if DEBUG_LOGSTDERR
+	char debugLogBuffer[1024] = {};
+	int outDebugBufferLength = 0;
+	
+	//wexprSchema_Twine_resolveToCString(objectPath, debugLogBuffer, sizeof(debugLogBuffer), &outDebugBufferLength);
+	fprintf(stderr, "+++ TODO: Validate array\n");
+#endif
+	
+	return true;
+}
+
+
+// Validate a map object whos rules should match the current SchemaType
+static bool s_wexprSchema_Type_validateMap (
+	WexprSchemaType* self,
+	WexprSchemaTwine* objectPath,
+	WexprExpression* expression,
+	WexprSchemaError** error
+)
+{
+#if DEBUG_LOGSTDERR
+	char debugLogBuffer[1024] = {};
+	int outDebugBufferLength = 0;
+	
+	//wexprSchema_Twine_resolveToCString(objectPath, debugLogBuffer, sizeof(debugLogBuffer), &outDebugBufferLength);
+	fprintf(stderr, "+++ Validate map\n");
+#endif
+	
+	bool success = true;
+	
+	// we need to check it multiple ways
+	// - we need to check via the properties we have . This will make sure all of our rules apply correct.
+	// TODO
+	//hashmap_iterate(self->m_mapProperties, &s_asdf, );
+	
+	// - we  need to check via expression, if we're not allowed to have unknown properties
+	// since we've checked all our rules, we need to just make sure we have rules for each one
+	if (!self->m_mapAdditionalProperties)
+	{
+		// make sure we have the equivilants
+		size_t count = wexpr_Expression_mapCount(expression);
+		for (size_t i=0; i < count; ++i)
+		{
+			const char* key = wexpr_Expression_mapKeyAt(expression, i);
+			
+			// can we identify the key in our rules?
+			bool foundKey = false;
+			any_t unusedRes;
+			if (MAP_OK == hashmap_get(self->m_mapProperties, (char*) key, &unusedRes))
+			{
+				foundKey = true;
+			}
+			
+			// if not, error it out
+			if (!foundKey)
+			{
+				if (error)
+				{
+					char errBuffer[256] = {};
+					wexprSchema_Twine_resolveToCString(objectPath, errBuffer, sizeof(errBuffer), LIBWEXPR_NULLPTR);
+					
+					char msgBuffer[1024] = {};
+					sprintf(msgBuffer, "Map has additional property which wasnt allowed: %s", key);
+
+					*error = wexprSchema_Error_create(
+						WexprSchemaErrorInternal,
+						errBuffer,
+						msgBuffer,
+						LIBWEXPR_NULLPTR,
+						*error
+					);
+				}
+				
+				success = false;
+			}
+		}
+	}
+	
+	return success;
+}
 
 // --- public Construction/Destruction
 
@@ -62,8 +242,11 @@ WexprSchemaType* wexprSchema_Type_createFromExpression (const char* name, WexprE
 	self->m_description = NULL;
 	self->m_primitiveType = WexprSchemaPrimitiveTypeUnknown;
 	self->m_types = NULL;
+	self->m_optional = false;
 
 	self->m_name = strdup(name);
+	self->m_mapProperties = hashmap_new();
+	self->m_mapAdditionalProperties = false;
 
 	WexprExpression* desc = wexpr_Expression_mapValueForKey(expression, "description");
 	if (desc)
@@ -83,9 +266,9 @@ WexprSchemaType* wexprSchema_Type_createFromExpression (const char* name, WexprE
 		if (typesType == WexprExpressionTypeValue)
 		{
 			// easy, just add one
-			WexprSchemaTypePrivateTypeArrayElement* elem = malloc(sizeof(WexprSchemaTypePrivateTypeArrayElement));
-			elem->typeName = strdup(wexpr_Expression_value(types));
-			elem->type = NULL;
+			WexprSchemaPrivateTypeRef* elem = wexprSchema_PrivateTypeRef_createWithName(
+				wexpr_Expression_value(types)
+			);
 			elem->next = self->m_types;
 			self->m_types = elem;
 
@@ -97,18 +280,64 @@ WexprSchemaType* wexprSchema_Type_createFromExpression (const char* name, WexprE
 			{
 				WexprExpression* expr = wexpr_Expression_arrayAt(types, i);
 
-				WexprSchemaTypePrivateTypeArrayElement* elem = malloc(sizeof(WexprSchemaTypePrivateTypeArrayElement));
-				elem->typeName = strdup(wexpr_Expression_value(expr));
-				elem->type = NULL;
+				WexprSchemaPrivateTypeRef* elem = wexprSchema_PrivateTypeRef_createWithName(
+					wexpr_Expression_value(expr)
+				);
 				elem->next = self->m_types;
 				self->m_types = elem;
 			}
 		}
 	}
 
+	// --- common
+	
+	WexprExpression* optionalExpr = wexpr_Expression_mapValueForKey(expression, "optional");
+	if (optionalExpr)
+	{
+		const char* optionalStr = wexpr_Expression_value(optionalExpr);
+		if (strcmp(optionalStr, "true") == 0)
+		{
+			self->m_optional = true;
+		}
+	}
+	
 	// TODO: valueRegex
 	// TODO: arrayAllElements
-	// TODO: mapProperties
+	
+	// --- map
+	WexprExpression* mapPropertiesExpr = wexpr_Expression_mapValueForKey(expression, "mapProperties");
+	if (mapPropertiesExpr)
+	{
+		size_t numberOfElements = wexpr_Expression_mapCount(mapPropertiesExpr);
+		for (size_t i=0; i < numberOfElements; ++i)
+		{
+			const char* keyName = wexpr_Expression_mapKeyAt(mapPropertiesExpr, i);
+			WexprExpression* value = wexpr_Expression_mapValueAt(mapPropertiesExpr, i);
+			
+			// SchemaTypeDefinition
+			WexprSchemaType_MapProperty* prop = malloc(sizeof(WexprSchemaType_MapProperty));
+			prop->key = strdup(keyName);
+			prop->value = wexprSchema_TypeInstance_createFromExpression(value);
+			
+#if DEBUG_LOGSTDERR
+			fprintf(stderr, "Type_createFromExpression('%s') Found type %s\n", name, keyName);
+#endif
+			hashmap_put(self->m_mapProperties, prop->key, prop);
+		}
+	}
+	
+	// TODO: mapAllProperties
+	
+	WexprExpression* mapAdditionalPropertiesExpr = wexpr_Expression_mapValueForKey(expression, "mapAdditionalProperties");
+	if (mapAdditionalPropertiesExpr)
+	{
+		const char* str = wexpr_Expression_value(mapAdditionalPropertiesExpr);
+		if (strcmp(str, "true") == 0)
+		{
+			self->m_mapAdditionalProperties = true;
+		}
+	}
+	
 	// TODO: etc
 
 	return self;
@@ -124,17 +353,19 @@ void wexprSchema_Type_destroy(WexprSchemaType* self)
 
 	if (self->m_types)
 	{
-		struct sglib_WexprSchemaTypePrivateTypeArrayElement_iterator it;
-		for (WexprSchemaTypePrivateTypeArrayElement* list = sglib_WexprSchemaTypePrivateTypeArrayElement_it_init(&it, self->m_types);
-			list != NULL; list = sglib_WexprSchemaTypePrivateTypeArrayElement_it_next(&it))
+		struct sglib_WexprSchemaPrivateTypeRef_iterator it;
+		for (WexprSchemaPrivateTypeRef* list = sglib_WexprSchemaPrivateTypeRef_it_init(&it, self->m_types);
+			list != NULL; list = sglib_WexprSchemaPrivateTypeRef_it_next(&it))
 		{
 			if (list->typeName)
-				free(list->typeName);
-			
-			free(list);
+				wexprSchema_PrivateTypeRef_destroy(list);
 		}
 	}
 
+	hashmap_iterate(self->m_mapProperties, &s_freeMapPropertiesHashData, NULL);
+	hashmap_free(self->m_mapProperties);
+	self->m_mapAllProperties = LIBWEXPR_NULLPTR;
+	
 	free(self);
 }
 
@@ -143,40 +374,50 @@ void wexprSchema_Type_destroy(WexprSchemaType* self)
 bool wexprSchema_Type_resolveWithSchema(WexprSchemaType* self, WexprSchemaSchema* schema, WexprSchemaError** error)
 {
 	// resolve every type we can
-	struct sglib_WexprSchemaTypePrivateTypeArrayElement_iterator it;
-	for (WexprSchemaTypePrivateTypeArrayElement* list = sglib_WexprSchemaTypePrivateTypeArrayElement_it_init(&it, self->m_types);
-		list != NULL; list = sglib_WexprSchemaTypePrivateTypeArrayElement_it_next(&it))
+	struct sglib_WexprSchemaPrivateTypeRef_iterator it;
+	for (WexprSchemaPrivateTypeRef* list = sglib_WexprSchemaPrivateTypeRef_it_init(&it, self->m_types);
+		list != NULL; list = sglib_WexprSchemaPrivateTypeRef_it_next(&it))
 	{
-		if (list->type == NULL && list->typeName != NULL)
+		if (!wexprSchema_PrivateTypeRef_isResolved(list))
 		{
-			list->type = wexprSchema_Schema_typeWithName(schema, list->typeName);
-			if (list->type != NULL)
+			const char* name = wexprSchema_PrivateTypeRef_name(list);
+			if (name)
 			{
-				free(list->typeName); // not needed anymore
-				list->typeName = NULL;
-			}
-			else
-			{
-				// failed to resolve
-				if (error)
+				WexprSchemaType* resolvedType = wexprSchema_Schema_typeWithName(schema, name);
+				if (resolvedType)
+					wexprSchema_PrivateTypeRef_resolveWith(list, resolvedType);
+				else
 				{
-					char errBuffer[256] = {};
-					WexprSchemaTwine message;
-					wexprSchema_Twine_init_CStr_CStr(&message, "Failed to resolve type: ", list->typeName);
-					wexprSchema_Twine_resolveToCString(&message, errBuffer, sizeof(errBuffer), LIBWEXPR_NULLPTR);
+					// failed to resolve
+					if (error)
+					{
+						char errBuffer[256] = {};
+						WexprSchemaTwine message;
+						wexprSchema_Twine_init_CStr_CStr(&message, "Failed to resolve type: ", list->typeName);
+						wexprSchema_Twine_resolveToCString(&message, errBuffer, sizeof(errBuffer), LIBWEXPR_NULLPTR);
 
-					*error = wexprSchema_Error_create(
-						WexprSchemaErrorInternal,
-						"[schema]",
-						errBuffer,
-						*error
-					);
+						*error = wexprSchema_Error_create(
+							WexprSchemaErrorInternal,
+							"[schema]",
+							errBuffer,
+							LIBWEXPR_NULLPTR,
+							*error
+						);
+					}
+
+					return false;
 				}
-
-				return false;
 			}
 		}
 	}
+	
+	// resolve the map properties
+	ResolveMapPropertiesParams p;
+	p.error = error;
+	p.schema = schema;
+	
+	hashmap_iterate(self->m_mapProperties, &s_resolveMapProperties, &p);
+	
 	// success
 	return true;
 }
@@ -198,14 +439,14 @@ unsigned int wexprSchema_Type_possibleTypesCount (WexprSchemaType* self)
 	if (self->m_types == 0)
 		return 0;
 
-	return sglib_WexprSchemaTypePrivateTypeArrayElement_len(self->m_types);
+	return sglib_WexprSchemaPrivateTypeRef_len(self->m_types);
 }
 
 WexprSchemaType* wexprSchema_Type_typeAt (WexprSchemaType* self, unsigned int index)
 {
-	struct sglib_WexprSchemaTypePrivateTypeArrayElement_iterator it;
-	for (WexprSchemaTypePrivateTypeArrayElement* list = sglib_WexprSchemaTypePrivateTypeArrayElement_it_init(&it, self->m_types);
-		list != NULL; list = sglib_WexprSchemaTypePrivateTypeArrayElement_it_next(&it))
+	struct sglib_WexprSchemaPrivateTypeRef_iterator it;
+	for (WexprSchemaPrivateTypeRef* list = sglib_WexprSchemaPrivateTypeRef_it_init(&it, self->m_types);
+		list != NULL; list = sglib_WexprSchemaPrivateTypeRef_it_next(&it))
 	{
 		if (index == 0)
 			return list->type;
@@ -240,12 +481,48 @@ bool wexprSchema_Type_validateObject (
 	WexprSchemaError** error
 )
 {
+#if DEBUG_LOGSTDERR
+	char debugLogBuffer[1024] = {};
+	int outDebugBufferLength = 0;
+	
+	wexprSchema_Twine_resolveToCString(objectPath, debugLogBuffer, sizeof(debugLogBuffer), &outDebugBufferLength);
+	fprintf(stderr, "+++ Trying to validate object: %.*s against %s\n", outDebugBufferLength, debugLogBuffer, wexprSchema_Type_name(self));
+#endif
+	
 	// check that the primitive types are set.
 	WexprSchemaPrimitiveType primitive = wexprSchema_Type_primitiveTypes(self);
-	WexprExpressionType expressionType = wexpr_Expression_type(expression);
+	WexprExpressionType expressionType = (expression ? wexpr_Expression_type(expression) : WexprExpressionTypeInvalid);
 
+	// special case, if expressionType is null or invalid and we're not required, we can short circuit
+	if (self->m_optional && (expressionType == WexprExpressionTypeNull || expressionType == WexprExpressionTypeInvalid))
+	{
+		#if DEBUG_LOGSTDERR
+			fprintf(stderr, "--- Allowed to be optional and was either null or invalid - successs\n");
+		#endif
+		
+		return true;
+	}
+	
+#if DEBUG_LOGSTDERR
+	{
+		WexprSchemaTwine twine = wexprSchema_PrimitiveType_toTwine(primitive);
+		wexprSchema_Twine_resolveToCString(&twine, debugLogBuffer, sizeof(debugLogBuffer), &outDebugBufferLength);
+		fprintf(stderr, "... Trying to match schema primitive type %.*s (%d) against type %s\n",
+			outDebugBufferLength, debugLogBuffer,
+			primitive,
+			wexpr_ExpressionType_toString(expressionType)
+		);
+	}
+#endif
+	
 	if (!wexprSchema_PrimitiveType_matchesExpressionType(primitive, expressionType))
 	{
+#if DEBUG_LOGSTDERR
+		{
+			fprintf(stderr, "  failed to match schema primitive types\n");
+		}
+#endif
+
 		if (error)
 		{
 			char errBuffer[256] = {};
@@ -271,6 +548,7 @@ bool wexprSchema_Type_validateObject (
 			*error = wexprSchema_Error_create(
 				WexprSchemaErrorInternal,
 				errBuffer, messageBuffer,
+				LIBWEXPR_NULLPTR,
 				*error
 			);
 		}
@@ -289,7 +567,26 @@ bool wexprSchema_Type_validateObject (
 		for (unsigned int i=0; i < typeCount; ++i)
 		{
 			WexprSchemaType* t = wexprSchema_Type_typeAt(self, i);
+			
+#if DEBUG_LOGSTDERR
+			{
+				fprintf(stderr, ">>> Testing against possible type: %s ...\n",
+					wexprSchema_Type_name(t)
+				);
+			}
+#endif
+
 			bool success =  wexprSchema_Type_validateObject(t, objectPath, expression, &typeErrors);
+			
+#if DEBUG_LOGSTDERR
+			{
+				fprintf(stderr, "<<< Finished testing against possible type: %s : %s\n",
+					wexprSchema_Type_name(t),
+					(success ? "success" : "failed")
+				);
+			}
+#endif
+
 			if (success)
 			{
 				parentTypeSelected = t;
@@ -299,6 +596,12 @@ bool wexprSchema_Type_validateObject (
 
 		if (parentTypeSelected == NULL)
 		{
+			#if DEBUG_LOGSTDERR
+			{
+				fprintf(stderr, "--- No type matched\n");
+			}
+			#endif
+			
 			if (error)
 			{
 				char errBuffer[256] = {};
@@ -307,8 +610,9 @@ bool wexprSchema_Type_validateObject (
 				*error = wexprSchema_Error_create(
 					WexprSchemaErrorInternal,
 					errBuffer,
-					"Does not match possible types, possibilities were:",
-					typeErrors
+					"Does not match possible types. Reasons for each possible type follows.",
+					typeErrors,
+					*error
 				);
 			}
 			else
@@ -328,7 +632,55 @@ bool wexprSchema_Type_validateObject (
 
 	// Then resolve our type specific rules if applicable
 	// (based on the wexpr primitive)
-
-	// TODO - we assume correct atm
+	if (primitive & WexprSchemaPrimitiveTypeNull)
+	{
+		#if DEBUG_LOGSTDERR
+			fprintf(stderr, "... Running null tests (none)\n");
+		#endif
+	}
+	
+	if (primitive & WexprSchemaPrimitiveTypeArray)
+	{
+		#if DEBUG_LOGSTDERR
+			fprintf(stderr, "... Running array tests\n");
+		#endif
+			
+		if (!s_wexprSchema_Type_validateArray(self, objectPath, expression, error))
+			return false;
+	}
+	
+	if (primitive & WexprSchemaPrimitiveTypeBinaryData)
+	{
+		#if DEBUG_LOGSTDERR
+			fprintf(stderr, "... Running binary data tests (none)\n");
+		#endif
+	}
+	
+	if (primitive & WexprSchemaPrimitiveTypeMap)
+	{
+		#if DEBUG_LOGSTDERR
+			fprintf(stderr, "... Running map tests\n");
+		#endif
+	
+		if (!s_wexprSchema_Type_validateMap(self, objectPath, expression, error))
+			return false;
+	}
+	
+	if (primitive & WexprSchemaPrimitiveTypeValue)
+	{
+		#if DEBUG_LOGSTDERR
+			fprintf(stderr, "... Running value tests\n");
+		#endif
+			
+		if (!s_wexprSchema_Type_validateValue(self, objectPath, expression, error))
+			return false;
+	}
+	
+	#if DEBUG_LOGSTDERR
+	{
+		fprintf(stderr, "--- All rules matched - success\n");
+	}
+	#endif
+			
 	return true;
 }

@@ -72,6 +72,7 @@ WexprSchemaError* wexprSchema_Error_create(
 	WexprSchemaErrorCode code,
 	const char* objectPath,
 	const char* message,
+	WexprSchemaError* childErrorIfAny,
 	WexprSchemaError* nextErrorIfAny
 );
 
@@ -102,6 +103,11 @@ const char* wexprSchema_Error_objectPath(WexprSchemaError* self);
 const char* wexprSchema_Error_message(WexprSchemaError* self);
 
 //
+/// \brief Return the child error, if any
+//
+WexprSchemaError* wexprSchema_Error_childError(WexprSchemaError* self);
+
+//
 /// \brief Return the next error in the chain, if any
 //
 WexprSchemaError* wexprSchema_Error_nextError(WexprSchemaError* self);
@@ -111,6 +117,11 @@ WexprSchemaError* wexprSchema_Error_nextError(WexprSchemaError* self);
 /// \name Error Chain
 /// \relates WexprSchemaError
 /// \{
+
+//
+/// \brief Set the error that is a child of this error. Will take ownership.
+//
+void wexprSchema_Error_setChild(WexprSchemaError* self, WexprSchemaError* childError);
 
 //
 /// \brief Append the given error to the end of the chain. Will take ownership.

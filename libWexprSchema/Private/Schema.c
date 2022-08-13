@@ -119,7 +119,7 @@ static const char* s_defaultPathForSchemaID (void* userData, const char* schemaI
 }
 
 //
-/// \brief Create a string containing the contents of the path
+/// \brief Create a string containing the contents of the path. Will be null terminated, and must not contain nulls.
 /// \note Allocated with callbacks
 //
 static char* s_createStringFromLocation (const char* path, WexprSchemaSchema_Callbacks* callbacks, WexprSchemaError** error)
@@ -132,6 +132,7 @@ static char* s_createStringFromLocation (const char* path, WexprSchemaSchema_Cal
 				WexprSchemaErrorInternal,
 				"/",
 				"Unable to load schema from http/https",
+				LIBWEXPR_NULLPTR,
 				LIBWEXPR_NULLPTR
 			);
 		}
@@ -153,6 +154,7 @@ static char* s_createStringFromLocation (const char* path, WexprSchemaSchema_Cal
 					WexprSchemaErrorInternal,
 					"/",
 					buffer,
+					LIBWEXPR_NULLPTR,
 					LIBWEXPR_NULLPTR
 				);
 			}
@@ -163,7 +165,7 @@ static char* s_createStringFromLocation (const char* path, WexprSchemaSchema_Cal
 		long int end = ftell(f);
 		fseek(f, 0, SEEK_SET);
 		
-		char* buf = callbacks->alloc(callbacks->allocatorUserData, end);
+		char* buf = callbacks->alloc(callbacks->allocatorUserData, end+1);
 		if (buf == LIBWEXPR_NULLPTR)
 		{
 			if (error) {
@@ -171,6 +173,7 @@ static char* s_createStringFromLocation (const char* path, WexprSchemaSchema_Cal
 					WexprSchemaErrorInternal,
 					"/",
 					"Unable to allocate memory",
+					LIBWEXPR_NULLPTR,
 					LIBWEXPR_NULLPTR
 				);
 			}
@@ -179,6 +182,7 @@ static char* s_createStringFromLocation (const char* path, WexprSchemaSchema_Cal
 		fread(buf, end, 1, f);
 		fclose(f);
 		
+		buf[end] = 0; // terminate
 		return buf;
 	}
 }
@@ -208,6 +212,7 @@ static bool s_loadFromSchemaID (WexprSchemaSchema* self, const char* schemaID, W
 				WexprSchemaErrorInternal,
 				"/",
 				"Error when loading schema wexpr",
+				LIBWEXPR_NULLPTR,
 				LIBWEXPR_NULLPTR
 			); 
 		}
@@ -233,6 +238,7 @@ static bool s_loadFromSchemaID (WexprSchemaSchema* self, const char* schemaID, W
 					WexprSchemaErrorInternal,
 					"/",
 					"Schema's schema was unknown",
+					LIBWEXPR_NULLPTR,
 					LIBWEXPR_NULLPTR
 				); 
 			}
@@ -442,6 +448,7 @@ bool wexprSchema_Schema_validateExpression(WexprSchemaSchema* self, WexprExpress
 			WexprSchemaErrorInternal,
 			errBuffer,
 			"No root type in schema to compare to",
+			LIBWEXPR_NULLPTR,
 			*error
 		);
 	
@@ -466,7 +473,8 @@ bool wexprSchema_Schema_validateExpression(WexprSchemaSchema* self, WexprExpress
 				WexprSchemaErrorInternal,
 				errBuffer,
 				"Unable to validate",
-				*error
+				*error,
+				LIBWEXPR_NULLPTR
 			);
 		}
 		return false;

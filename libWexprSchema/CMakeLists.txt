@@ -13,6 +13,7 @@ project (libWexprSchema)
 		${CMAKE_CURRENT_SOURCE_DIR}/Public/libWexprSchema/Schema.h
 		${CMAKE_CURRENT_SOURCE_DIR}/Public/libWexprSchema/Twine.h
 		${CMAKE_CURRENT_SOURCE_DIR}/Public/libWexprSchema/Type.h
+		${CMAKE_CURRENT_SOURCE_DIR}/Public/libWexprSchema/TypeInstance.h
 	)
 	
 	set (libWexprSchema_SOURCES
@@ -22,6 +23,9 @@ project (libWexprSchema)
 		${CMAKE_CURRENT_SOURCE_DIR}/Private/Schema.c
 		${CMAKE_CURRENT_SOURCE_DIR}/Private/Twine.c
 		${CMAKE_CURRENT_SOURCE_DIR}/Private/Type.c
+		${CMAKE_CURRENT_SOURCE_DIR}/Private/TypeInstance.c
+		${CMAKE_CURRENT_SOURCE_DIR}/Private/TypeRef.h
+		${CMAKE_CURRENT_SOURCE_DIR}/Private/TypeRef.c
 	)
 	
 	# MSVC gets annoyed with our POSIX functions

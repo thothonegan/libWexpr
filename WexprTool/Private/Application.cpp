@@ -43,6 +43,26 @@ namespace
 {
 	const uint32_t VersionHandled = 0x00001000; // 0.1.0
 	
+	void s_writeOutErrorWithIndent (WexprSchemaError* err, size_t indent)
+	{
+		while (err)
+		{
+			std::cerr << "WexprTool: "
+				<< wexprSchema_Error_objectPath(err) << ": "
+				<< std::string(indent*2, ' ')
+				<< "error: "
+				<< wexprSchema_Error_message(err) << std::endl;
+				
+			WexprSchemaError* child = wexprSchema_Error_childError(err);
+			if (child)
+			{
+				s_writeOutErrorWithIndent(child, indent+1);
+			}
+			
+			err = wexprSchema_Error_nextError(err);
+		}
+	}
+	
 	std::string s_readAllInputFrom (const std::string& inputPath)
 	{
 		std::string data;
@@ -382,15 +402,8 @@ int main (int argc, char** argv)
 				else
 				{
 					std::cerr << "WexprTool: Error when validating against schema " << std::endl;
-					WexprSchemaError* serr = schemaError;
-					while (serr)
-					{
-						std::cerr << "WexprTool: "
-							<< wexprSchema_Error_objectPath(serr) << ": error: "
-							<< wexprSchema_Error_message(serr) << std::endl;
-						
-						serr = wexprSchema_Error_nextError(serr);
-					}
+					
+					s_writeOutErrorWithIndent(schemaError, 0);
 				}
 
 				return EXIT_FAILURE;
