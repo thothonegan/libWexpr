@@ -98,7 +98,7 @@ struct WexprSchemaType
 typedef struct WexprSchemaType_MapProperty
 {
 	char* key; // strdup, we own 
-	WexprSchemaTypeInstance* value;;
+	WexprSchemaTypeInstance* value;
 } WexprSchemaType_MapProperty;
 
 // --- private internals
@@ -210,10 +210,10 @@ static bool s_wexprSchema_Type_validateMap (
 			{
 				if (error)
 				{
-					char errBuffer[256] = {};
+					char errBuffer[256] = {0};
 					wexprSchema_Twine_resolveToCString(objectPath, errBuffer, sizeof(errBuffer), LIBWEXPR_NULLPTR);
 					
-					char msgBuffer[1024] = {};
+					char msgBuffer[1024] = {0};
 					sprintf(msgBuffer, "Map has additional property which wasnt allowed: %s", key);
 
 					*error = wexprSchema_Error_create(
@@ -391,7 +391,7 @@ bool wexprSchema_Type_resolveWithSchema(WexprSchemaType* self, WexprSchemaSchema
 					// failed to resolve
 					if (error)
 					{
-						char errBuffer[256] = {};
+						char errBuffer[256] = {0};
 						WexprSchemaTwine message;
 						wexprSchema_Twine_init_CStr_CStr(&message, "Failed to resolve type: ", list->typeName);
 						wexprSchema_Twine_resolveToCString(&message, errBuffer, sizeof(errBuffer), LIBWEXPR_NULLPTR);
@@ -525,7 +525,7 @@ bool wexprSchema_Type_validateObject (
 
 		if (error)
 		{
-			char errBuffer[256] = {};
+			char errBuffer[256] = {0};
 			wexprSchema_Twine_resolveToCString(objectPath, errBuffer, sizeof(errBuffer), LIBWEXPR_NULLPTR);
 
 			WexprSchemaTwine errorMessage1, errorMessage2, errorMessage3;
@@ -542,7 +542,7 @@ bool wexprSchema_Type_validateObject (
 				&errorMessage2, &primTwine
 			);
 
-			char messageBuffer[256]= {};
+			char messageBuffer[256]= {0};
 			wexprSchema_Twine_resolveToCString(&errorMessage3, messageBuffer, sizeof(messageBuffer), LIBWEXPR_NULLPTR);
 
 			*error = wexprSchema_Error_create(
@@ -604,7 +604,7 @@ bool wexprSchema_Type_validateObject (
 			
 			if (error)
 			{
-				char errBuffer[256] = {};
+				char errBuffer[256] = {0};
 				wexprSchema_Twine_resolveToCString(objectPath, errBuffer, sizeof(errBuffer), LIBWEXPR_NULLPTR);
 
 				*error = wexprSchema_Error_create(

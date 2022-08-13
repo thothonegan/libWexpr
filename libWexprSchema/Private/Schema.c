@@ -144,7 +144,7 @@ static char* s_createStringFromLocation (const char* path, WexprSchemaSchema_Cal
 		FILE* f = fopen(path, "rb");
 		if (f == LIBWEXPR_NULLPTR) {
 			if (error) {
-				char buffer[1024] = {};
+				char buffer[1024] = {0};
 				sprintf(buffer, "Unable to open file %s: %s",
 					path,
 					strerror(errno)
@@ -441,7 +441,7 @@ bool wexprSchema_Schema_validateExpression(WexprSchemaSchema* self, WexprExpress
 	WexprSchemaType* rootType = WexprSchema_Schema_rootType(self);
 	if (!rootType)
 	{
-		char errBuffer[256] = {};
+		char errBuffer[256] = {0};
 		wexprSchema_Twine_resolveToCString(&objectPath, errBuffer, sizeof(errBuffer), LIBWEXPR_NULLPTR);
 
 		*error = wexprSchema_Error_create(
@@ -466,7 +466,7 @@ bool wexprSchema_Schema_validateExpression(WexprSchemaSchema* self, WexprExpress
 	{
 		if (error)
 		{
-			char errBuffer[256] = {};
+			char errBuffer[256] = {0};
 			wexprSchema_Twine_resolveToCString(&objectPath, errBuffer, sizeof(errBuffer), LIBWEXPR_NULLPTR);
 
 			*error = wexprSchema_Error_create(

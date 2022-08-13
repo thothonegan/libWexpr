@@ -63,7 +63,7 @@ bool wexprSchema_TypeInstance_resolveWithSchema(WexprSchemaTypeInstance* self, s
 		// failed to resolve
 		if (error)
 		{
-			char errBuffer[256] = {};
+			char errBuffer[256] = {0};
 			WexprSchemaTwine message;
 			wexprSchema_Twine_init_CStr_CStr(&message, "Failed to resolve type: ", self->m_type->typeName);
 			wexprSchema_Twine_resolveToCString(&message, errBuffer, sizeof(errBuffer), LIBWEXPR_NULLPTR);
