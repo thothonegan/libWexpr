@@ -142,11 +142,25 @@ namespace
 	}
 }
 
+class ApplicationSetup
+{
+	public:
+		ApplicationSetup () {
+			wexprSchema_Global_init();
+		}
+		~ApplicationSetup () {
+			wexprSchema_Global_free();
+		}
+};
+
 //
 /// \brief App entry point
 //
 int main (int argc, char** argv)
 {
+	ApplicationSetup appSetup;
+	(void) appSetup;
+	
 	auto results = CommandLineParser::parse (argc, argv);
 	
 	if (results.version)

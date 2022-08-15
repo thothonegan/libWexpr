@@ -12,6 +12,8 @@
 #include <libWexprSchema/Schema.h>
 #include <libWexprSchema/TypeInstance.h>
 
+#include <Onigmo/onigmo.h>
+
 #include <stdio.h>
 
 #include "../../libWexpr/Private/ThirdParty/c_hashmap/hashmap.h"
@@ -57,24 +59,24 @@ struct WexprSchemaType
 	
 	// -------------- Common
 	
-	//
-	/// \brief Is this element optional? (default false)
-	//
-	bool m_optional;
-	
 	// ------------- Value
 	
 	//
 	/// \brief If set, the regular expression the value must match to be valid
 	//
-	void* m_valueRegex;
+	OnigRegexType* m_valueRegex;
+	
+	//
+	/// \brief If set, the string for the regex. strdupd.
+	//
+	char* m_valueRegexString;
 	
 	// ------------- Array
 	
 	//
-	/// \brief Type definition that all array elements must meet
+	/// \brief If set, type definition that all array elements must meet
 	//
-	void* m_arrayAllElements;
+	WexprSchemaTypeInstance* m_arrayAllElements;
 	
 	// ------------- Map
 	
@@ -85,14 +87,19 @@ struct WexprSchemaType
 	map_t m_mapProperties;
 	
 	//
-	/// \biref List of rules that every map entry must meet
+	/// \brief If set, all map values must meet this instance.
 	//
-	void* m_mapAllProperties;
+	WexprSchemaTypeInstance* m_mapAllProperties;
+	
+	//
+	/// \brief If set, all map keys must meet this instance
+	//
+	WexprSchemaTypeInstance* m_mapKeyType;
 	
 	//
 	/// \brief Are additional properties outside the 'mapProperties' allowed? Default is false
 	//
-	bool m_mapAdditionalProperties;
+	bool m_mapAllowAdditionalProperties;
 };
 
 typedef struct WexprSchemaType_MapProperty
@@ -114,13 +121,18 @@ typedef struct ResolveMapPropertiesParams
 {
 	WexprSchemaSchema* schema;
 	WexprSchemaError** error;
+	bool result; // must start true
 } ResolveMapPropertiesParams;
 
 static int s_resolveMapProperties (any_t userData, any_t data)
 {
 	ResolveMapPropertiesParams* params = userData;
 	WexprSchemaType_MapProperty* elem = data;
-	wexprSchema_TypeInstance_resolveWithSchema(elem->value, params->schema, params->error);
+#if DEBUG_LOGSTDERR
+	fprintf(stderr, "Resolving map property '%s'\n", elem->key);
+#endif
+
+	params->result &= wexprSchema_TypeInstance_resolveWithSchema(elem->value, params->schema, params->error);
 	
 	return MAP_OK;
 }
@@ -137,11 +149,76 @@ static bool s_wexprSchema_Type_validateValue(
 	char debugLogBuffer[1024] = {};
 	int outDebugBufferLength = 0;
 	
-	//wexprSchema_Twine_resolveToCString(objectPath, debugLogBuffer, sizeof(debugLogBuffer), &outDebugBufferLength);
-	fprintf(stderr, "+++ TODO: Validate value\n");
+	wexprSchema_Twine_resolveToCString(objectPath, debugLogBuffer, sizeof(debugLogBuffer), &outDebugBufferLength);
+	fprintf(stderr, "+++ %s: Validate value\n", debugLogBuffer);
 #endif
 	
-	return true;
+	const char* exprValue = wexpr_Expression_value(expression);
+	int exprValueLen = ((exprValue == NULL) ? 0 : strlen(exprValue));
+	bool success = true;
+	
+	if (self->m_valueRegex)
+	{
+		#if DEBUG_LOGSTDERR
+			fprintf(stderr, "    Validate '%s' against regex: %s\n", exprValue, self->m_valueRegexString);
+		#endif
+		bool regexSuccess = true;
+		
+		OnigRegion* region = onig_region_new();
+		
+		OnigPosition r = onig_search(self->m_valueRegex,
+			(const unsigned char*) exprValue, (const unsigned char*) (exprValue + exprValueLen),
+			(const unsigned char*) exprValue, (const unsigned char*) (exprValue + exprValueLen),
+			region,
+			ONIG_OPTION_NONE
+		);
+		
+		if (r != 0) // < 0 is error, > 0 means not matched at start of string
+			regexSuccess = false;
+		else if (region->num_regs == 0)
+			regexSuccess = false;
+		else if (region->end[0] != exprValueLen)
+			regexSuccess = false; // didnt cover the whole string
+		
+		if (regexSuccess)
+		{
+		#if DEBUG_LOGSTDERR
+			fprintf(stderr, "    Regex success\n");
+		#endif
+		}
+		
+		if (!regexSuccess)
+		{
+		#if DEBUG_LOGSTDERR
+			fprintf(stderr, "    Regex failure \n");
+		#endif
+			if (error)
+			{
+				char errBuffer[256] = {0};
+				wexprSchema_Twine_resolveToCString(objectPath, errBuffer, sizeof(errBuffer), LIBWEXPR_NULLPTR);
+				
+				char msgBuffer[1024] = {0};
+				sprintf(msgBuffer, "Value '%s' does not meet required regex '%s'", exprValue, self->m_valueRegexString
+				);
+
+				*error = wexprSchema_Error_create(
+					WexprSchemaErrorInternal,
+					errBuffer,
+					msgBuffer,
+					LIBWEXPR_NULLPTR,
+					*error
+				);
+			}
+		}
+		
+		onig_region_free(region, 1);
+		success &= regexSuccess;
+	}
+	
+	#if DEBUG_LOGSTDERR
+		fprintf(stderr, "--- Overall done: %d\n", success);
+	#endif
+	return success;
 }
 
 // Validate an array object whos rules should match the current SchemaType
@@ -157,12 +234,101 @@ static bool s_wexprSchema_Type_validateArray (
 	int outDebugBufferLength = 0;
 	
 	//wexprSchema_Twine_resolveToCString(objectPath, debugLogBuffer, sizeof(debugLogBuffer), &outDebugBufferLength);
-	fprintf(stderr, "+++ TODO: Validate array\n");
+	fprintf(stderr, "+++ Validate array\n");
 #endif
 	
-	return true;
+	// check the array types
+	bool success = true;
+	if (self->m_arrayAllElements)
+	{
+		size_t count = wexpr_Expression_arrayCount(expression);
+		
+#if DEBUG_LOGSTDERR
+	fprintf(stderr, "    Validating array all elements\n");
+#endif
+		for (size_t i=0; i < count; ++i)
+		{
+			char buf[32] = {0};
+			sprintf(buf, "[%zu]", i);
+			
+			WexprSchemaTwine indexObjectPath;
+			wexprSchema_Twine_init_Twine_CStr(&indexObjectPath, objectPath, buf);
+			
+			WexprExpression* childExpr = wexpr_Expression_arrayAt(expression, i);
+			bool res = wexprSchema_TypeInstance_validateObject(
+				self->m_arrayAllElements,
+				&indexObjectPath,
+				childExpr,
+				error
+			);
+			success &= res;
+		}
+	}
+	
+	return success;
 }
 
+typedef struct PrivateValidateMapPropertyParams
+{
+	WexprSchemaTwine* parentObjectPath;
+	WexprExpression* parentExpression;
+	WexprSchemaError** error;
+	bool validateAgainstAll;
+	bool result;
+} PrivateValidateMapPropertyParams;
+
+#define OBJECTPATH_APPEND(varName, prevObjectPath, name) \
+WexprSchemaTwine varName##_withSlash; \
+WexprSchemaTwine varName; \
+if (wexprSchema_Twine_endsWith(prevObjectPath, "/")) \
+{ \
+	wexprSchema_Twine_init_Twine_empty(&varName##_withSlash, prevObjectPath); \
+} \
+else \
+{ \
+	wexprSchema_Twine_init_Twine_CStr(&varName##_withSlash, prevObjectPath, "/"); \
+} \
+wexprSchema_Twine_init_Twine_CStr(&varName, &varName##_withSlash, name)
+
+
+static int s_validateMapProperty (any_t userData, any_t data)
+{
+	PrivateValidateMapPropertyParams* params = userData;
+	WexprSchemaType_MapProperty* elem = data;
+	
+	OBJECTPATH_APPEND(objectPath, params->parentObjectPath, elem->key);
+	WexprSchemaError* e = LIBWEXPR_NULLPTR;
+	
+	bool res = wexprSchema_TypeInstance_validateObject(
+		elem->value,
+		&objectPath,
+		wexpr_Expression_mapValueForKey(params->parentExpression, elem->key),
+		&e
+	);
+	
+	if (!res) {
+		if (params->error)
+		{
+			char objectPathStr[256] = {0};
+			wexprSchema_Twine_resolveToCString(&objectPath, objectPathStr, sizeof(objectPathStr), LIBWEXPR_NULLPTR);
+			
+			char buffer[512] = {0};
+			sprintf(buffer, "Error when validating map property: %s", elem->key);
+			
+			*(params->error) = wexprSchema_Error_create(
+				WexprSchemaErrorInternal,
+				objectPathStr,
+				buffer,
+				e,
+				*(params->error)
+			);
+		}
+	}
+	
+	params->result &= res;
+	
+	return MAP_OK;
+}
 
 // Validate a map object whos rules should match the current SchemaType
 static bool s_wexprSchema_Type_validateMap (
@@ -185,11 +351,62 @@ static bool s_wexprSchema_Type_validateMap (
 	// we need to check it multiple ways
 	// - we need to check via the properties we have . This will make sure all of our rules apply correct.
 	// TODO
-	//hashmap_iterate(self->m_mapProperties, &s_asdf, );
+	PrivateValidateMapPropertyParams p;
+	p.error = error;
+	p.parentExpression = expression;
+	p.parentObjectPath = objectPath;
+	p.result = true;
+	hashmap_iterate(self->m_mapProperties, &s_validateMapProperty, &p);
+	success &= p.result;
+	
+	// - we need to check all properties against the all if we have it
+	if (self->m_mapAllProperties || self->m_mapKeyType)
+	{
+		size_t count = wexpr_Expression_mapCount(expression);
+		for (size_t i=0; i < count; ++i)
+		{
+			const char* key = wexpr_Expression_mapKeyAt(expression, i);
+			
+			OBJECTPATH_APPEND(keyObjectPath, objectPath, key);
+				
+			if (self->m_mapKeyType)
+			{
+				// create a fake expression we can test against
+				WexprExpression* keyValue = wexpr_Expression_createValue(key);
+				
+				bool res = wexprSchema_TypeInstance_validateObject(
+					self->m_mapKeyType,
+					&keyObjectPath,
+					keyValue,
+					error
+				);
+				success &= res;
+				
+				wexpr_Expression_destroy(keyValue);
+			}
+			
+			if (self->m_mapAllProperties)
+			{
+#if DEBUG_LOGSTDERR
+				fprintf(stderr, "--- Testing against mapAllProperties: %s\n", key);
+#endif
+			
+				WexprExpression* value = wexpr_Expression_mapValueAt(expression, i);
+				
+				bool res = wexprSchema_TypeInstance_validateObject(
+					self->m_mapAllProperties,
+					&keyObjectPath,
+					value,
+					error
+				);
+				success &= res;
+			}
+		}
+	}
 	
 	// - we  need to check via expression, if we're not allowed to have unknown properties
 	// since we've checked all our rules, we need to just make sure we have rules for each one
-	if (!self->m_mapAdditionalProperties)
+	if (!self->m_mapAllProperties && !self->m_mapAllowAdditionalProperties)
 	{
 		// make sure we have the equivilants
 		size_t count = wexpr_Expression_mapCount(expression);
@@ -237,16 +454,24 @@ static bool s_wexprSchema_Type_validateMap (
 
 WexprSchemaType* wexprSchema_Type_createFromExpression (const char* name, WexprExpression* expression)
 {
+#if DEBUG_LOGSTDERR
+			fprintf(stderr, "Type_createFromExpression('%s') ---- Creating \n", name);
+#endif
+			
 	WexprSchemaType* self = malloc(sizeof(WexprSchemaType));
 	self->m_name = NULL;
 	self->m_description = NULL;
 	self->m_primitiveType = WexprSchemaPrimitiveTypeUnknown;
 	self->m_types = NULL;
-	self->m_optional = false;
+	self->m_valueRegex = NULL;
+	self->m_valueRegexString = NULL;
 
 	self->m_name = strdup(name);
 	self->m_mapProperties = hashmap_new();
-	self->m_mapAdditionalProperties = false;
+	self->m_arrayAllElements = NULL;
+	self->m_mapAllowAdditionalProperties = false;
+	self->m_mapAllProperties = NULL;
+	self->m_mapKeyType = NULL;
 
 	WexprExpression* desc = wexpr_Expression_mapValueForKey(expression, "description");
 	if (desc)
@@ -265,6 +490,9 @@ WexprSchemaType* wexprSchema_Type_createFromExpression (const char* name, WexprE
 		WexprExpressionType typesType = wexpr_Expression_type(types);
 		if (typesType == WexprExpressionTypeValue)
 		{
+#if DEBUG_LOGSTDERR
+			fprintf(stderr, "Type_createFromExpression('%s') Adding single possible type: %s\n", name, wexpr_Expression_value(types));
+#endif
 			// easy, just add one
 			WexprSchemaPrivateTypeRef* elem = wexprSchema_PrivateTypeRef_createWithName(
 				wexpr_Expression_value(types)
@@ -280,6 +508,9 @@ WexprSchemaType* wexprSchema_Type_createFromExpression (const char* name, WexprE
 			{
 				WexprExpression* expr = wexpr_Expression_arrayAt(types, i);
 
+#if DEBUG_LOGSTDERR
+			fprintf(stderr, "Type_createFromExpression('%s') Adding possible type: %s\n", name, wexpr_Expression_value(expr));
+#endif
 				WexprSchemaPrivateTypeRef* elem = wexprSchema_PrivateTypeRef_createWithName(
 					wexpr_Expression_value(expr)
 				);
@@ -291,18 +522,43 @@ WexprSchemaType* wexprSchema_Type_createFromExpression (const char* name, WexprE
 
 	// --- common
 	
-	WexprExpression* optionalExpr = wexpr_Expression_mapValueForKey(expression, "optional");
-	if (optionalExpr)
+	// --- value
+	
+	WexprExpression* valueRegexExpr = wexpr_Expression_mapValueForKey(expression, "valueRegex");
+	if (valueRegexExpr)
 	{
-		const char* optionalStr = wexpr_Expression_value(optionalExpr);
-		if (strcmp(optionalStr, "true") == 0)
+		const char* str = wexpr_Expression_value(valueRegexExpr);
+		self->m_valueRegexString = strdup(str);
+		
+#if DEBUG_LOGSTDERR
+			fprintf(stderr, "Type_createFromExpression('%s') Found regex %s\n", name, str);
+#endif
+		OnigErrorInfo einfo = {};
+		int r = onig_new(&(self->m_valueRegex),
+			(const unsigned char*) str,
+			(const unsigned char*) (str + strlen(str)),
+			ONIG_OPTION_DEFAULT, ONIG_ENCODING_UTF8, ONIG_SYNTAX_DEFAULT,
+			&einfo
+		);
+		
+		if (r != ONIG_NORMAL)
 		{
-			self->m_optional = true;
+			fprintf(stderr, "Schema regex failed to compile");
+			abort();
 		}
 	}
 	
-	// TODO: valueRegex
-	// TODO: arrayAllElements
+	// --- array 
+	WexprExpression* arrayAllElementsExpr = wexpr_Expression_mapValueForKey(expression, "arrayAllElements");
+	if (arrayAllElementsExpr)
+	{
+#if DEBUG_LOGSTDERR
+		fprintf(stderr, "Type_createFromExpression('%s') Found arrayAllElements\n", name);
+#endif
+		self->m_arrayAllElements = wexprSchema_TypeInstance_createFromExpression(
+			arrayAllElementsExpr
+		);
+	}
 	
 	// --- map
 	WexprExpression* mapPropertiesExpr = wexpr_Expression_mapValueForKey(expression, "mapProperties");
@@ -320,21 +576,47 @@ WexprSchemaType* wexprSchema_Type_createFromExpression (const char* name, WexprE
 			prop->value = wexprSchema_TypeInstance_createFromExpression(value);
 			
 #if DEBUG_LOGSTDERR
-			fprintf(stderr, "Type_createFromExpression('%s') Found type %s\n", name, keyName);
+			fprintf(stderr, "Type_createFromExpression('%s') Found mapProperties key %s\n", name, keyName);
 #endif
 			hashmap_put(self->m_mapProperties, prop->key, prop);
 		}
 	}
 	
-	// TODO: mapAllProperties
-	
-	WexprExpression* mapAdditionalPropertiesExpr = wexpr_Expression_mapValueForKey(expression, "mapAdditionalProperties");
-	if (mapAdditionalPropertiesExpr)
+	WexprExpression* mapKeyTypeExpr = wexpr_Expression_mapValueForKey(expression, "mapValueForKey");
+	if (mapKeyTypeExpr)
 	{
-		const char* str = wexpr_Expression_value(mapAdditionalPropertiesExpr);
+#if DEBUG_LOGSTDERR
+		fprintf(stderr, "Type_createFromExpression('%s') Found mapKeyExpression\n", name);
+#endif
+		self->m_mapKeyType = wexprSchema_TypeInstance_createFromExpression(
+			mapKeyTypeExpr
+		);
+	}
+	
+	WexprExpression* mapAllProperties = wexpr_Expression_mapValueForKey(expression, "mapAllProperties");
+	if (mapAllProperties)
+	{
+#if DEBUG_LOGSTDERR
+			fprintf(stderr, "Type_createFromExpression('%s') Found mapAllProperties\n", name);
+#endif
+		self->m_mapAllProperties = wexprSchema_TypeInstance_createFromExpression(
+			mapAllProperties
+		);
+	}
+	
+	WexprExpression* mapAllowAdditionalPropertiesExpr = wexpr_Expression_mapValueForKey(expression, "mapAllowAdditionalProperties");
+	if (mapAllowAdditionalPropertiesExpr)
+	{
+#if DEBUG_LOGSTDERR
+			fprintf(stderr, "Type_createFromExpression('%s') Found mapAllowAdditionalProperties\n", name);
+#endif
+		const char* str = wexpr_Expression_value(mapAllowAdditionalPropertiesExpr);
 		if (strcmp(str, "true") == 0)
 		{
-			self->m_mapAdditionalProperties = true;
+#if DEBUG_LOGSTDERR
+			fprintf(stderr, "Type_createFromExpression('%s') Enabled mapAllowAdditionalProperties\n", name);
+#endif
+			self->m_mapAllowAdditionalProperties = true;
 		}
 	}
 	
@@ -362,6 +644,32 @@ void wexprSchema_Type_destroy(WexprSchemaType* self)
 		}
 	}
 
+	if (self->m_valueRegex)
+	{
+		onig_free(self->m_valueRegex);
+		self->m_valueRegex = LIBWEXPR_NULLPTR;
+	}
+	
+	if (self->m_valueRegexString)
+	{
+		free(self->m_valueRegexString);
+	}
+	
+	if (self->m_arrayAllElements)
+	{
+		wexprSchema_TypeInstance_destroy(self->m_arrayAllElements);
+	}
+	
+	if (self->m_mapAllProperties)
+	{
+		wexprSchema_TypeInstance_destroy(self->m_mapAllProperties);
+	}
+	
+	if (self->m_mapKeyType)
+	{
+		wexprSchema_TypeInstance_destroy(self->m_mapKeyType);
+	}
+	
 	hashmap_iterate(self->m_mapProperties, &s_freeMapPropertiesHashData, NULL);
 	hashmap_free(self->m_mapProperties);
 	self->m_mapAllProperties = LIBWEXPR_NULLPTR;
@@ -373,6 +681,10 @@ void wexprSchema_Type_destroy(WexprSchemaType* self)
 
 bool wexprSchema_Type_resolveWithSchema(WexprSchemaType* self, WexprSchemaSchema* schema, WexprSchemaError** error)
 {
+#if DEBUG_LOGSTDERR
+	fprintf(stderr, "wexprSchema_Type_resolveWithSchema('%s') Resolving types...\n", self->m_name);
+#endif
+	
 	// resolve every type we can
 	struct sglib_WexprSchemaPrivateTypeRef_iterator it;
 	for (WexprSchemaPrivateTypeRef* list = sglib_WexprSchemaPrivateTypeRef_it_init(&it, self->m_types);
@@ -415,8 +727,47 @@ bool wexprSchema_Type_resolveWithSchema(WexprSchemaType* self, WexprSchemaSchema
 	ResolveMapPropertiesParams p;
 	p.error = error;
 	p.schema = schema;
+	p.result = true;
 	
 	hashmap_iterate(self->m_mapProperties, &s_resolveMapProperties, &p);
+	if (!p.result)
+		return false;
+	
+	// resolve the array
+	if (self->m_arrayAllElements)
+	{
+		bool r = wexprSchema_TypeInstance_resolveWithSchema(
+			self->m_arrayAllElements,
+			schema,
+			error
+		);
+		if (!r)
+			return false;
+	}
+	
+	// resolve the key
+	if (self->m_mapKeyType)
+	{
+		bool r = wexprSchema_TypeInstance_resolveWithSchema(
+			self->m_mapKeyType,
+			schema,
+			error
+		);
+		if (!r)
+			return false;
+	}
+	
+	// resolve the all
+	if (self->m_mapAllProperties)
+	{
+		bool r = wexprSchema_TypeInstance_resolveWithSchema(
+			self->m_mapAllProperties,
+			schema,
+			error
+		);
+		if (!r)
+			return false;
+	}
 	
 	// success
 	return true;
@@ -450,6 +801,8 @@ WexprSchemaType* wexprSchema_Type_typeAt (WexprSchemaType* self, unsigned int in
 	{
 		if (index == 0)
 			return list->type;
+		
+		index -= 1;
 	}
 
 	return NULL;
@@ -492,16 +845,6 @@ bool wexprSchema_Type_validateObject (
 	// check that the primitive types are set.
 	WexprSchemaPrimitiveType primitive = wexprSchema_Type_primitiveTypes(self);
 	WexprExpressionType expressionType = (expression ? wexpr_Expression_type(expression) : WexprExpressionTypeInvalid);
-
-	// special case, if expressionType is null or invalid and we're not required, we can short circuit
-	if (self->m_optional && (expressionType == WexprExpressionTypeNull || expressionType == WexprExpressionTypeInvalid))
-	{
-		#if DEBUG_LOGSTDERR
-			fprintf(stderr, "--- Allowed to be optional and was either null or invalid - successs\n");
-		#endif
-		
-		return true;
-	}
 	
 #if DEBUG_LOGSTDERR
 	{
@@ -673,12 +1016,18 @@ bool wexprSchema_Type_validateObject (
 		#endif
 			
 		if (!s_wexprSchema_Type_validateValue(self, objectPath, expression, error))
+		{
+		#if DEBUG_LOGSTDERR
+			fprintf(stderr, "--- Value tests failed\n");
+		#endif
 			return false;
+		}
 	}
 	
 	#if DEBUG_LOGSTDERR
 	{
-		fprintf(stderr, "--- All rules matched - success\n");
+		wexprSchema_Twine_resolveToCString(objectPath, debugLogBuffer, sizeof(debugLogBuffer), &outDebugBufferLength);
+		fprintf(stderr, "--- %s %s: All rules matched - success\n", self->m_name, debugLogBuffer);
 	}
 	#endif
 			

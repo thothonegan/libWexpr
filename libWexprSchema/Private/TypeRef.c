@@ -9,6 +9,7 @@
 #include "TypeRef.h"
 
 #include <stdlib.h>
+#include <string.h>
 
 SGLIB_DEFINE_LIST_FUNCTIONS (WexprSchemaPrivateTypeRef, WEXPRSCHEMAPRIVATETYPEREF_COMPARATOR, next)
 

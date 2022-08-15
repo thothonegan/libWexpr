@@ -7,6 +7,7 @@ project (libWexprSchema)
 
 	set (libWexprSchema_HEADERS
 		${CMAKE_CURRENT_SOURCE_DIR}/Public/libWexprSchema/Error.h
+		${CMAKE_CURRENT_SOURCE_DIR}/Public/libWexprSchema/Global.h
 		${CMAKE_CURRENT_SOURCE_DIR}/Public/libWexprSchema/libWexprSchema.h
 		${CMAKE_CURRENT_SOURCE_DIR}/Public/libWexprSchema/Macros.h
 		${CMAKE_CURRENT_SOURCE_DIR}/Public/libWexprSchema/PrimitiveType.h
@@ -18,6 +19,7 @@ project (libWexprSchema)
 	
 	set (libWexprSchema_SOURCES
 		${CMAKE_CURRENT_SOURCE_DIR}/Private/Error.c
+		${CMAKE_CURRENT_SOURCE_DIR}/Private/Global.c
 		${CMAKE_CURRENT_SOURCE_DIR}/Private/libWexprSchema.c
 		${CMAKE_CURRENT_SOURCE_DIR}/Private/PrimitiveType.c
 		${CMAKE_CURRENT_SOURCE_DIR}/Private/Schema.c
@@ -58,7 +60,7 @@ project (libWexprSchema)
 				${libWexpr_SHAREDLIB_DEFINES}
 			)
 			
-			catalyst_module_use (libWexprSchema libWexpr)
+			catalyst_module_use (libWexprSchema libWexpr Onigmo)
 		catalyst_end_module (libWexprSchema Modules/)
 
 		catalyst_install_target (libWexprSchema Modules/)

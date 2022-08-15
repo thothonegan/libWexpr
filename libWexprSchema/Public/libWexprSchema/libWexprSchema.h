@@ -9,6 +9,7 @@
 #ifndef LIBWEXPRSCHEMA_LIBWEXPRSCHEMA_H
 #define LIBWEXPRSCHEMA_LIBWEXPRSCHEMA_H
 
+#include "Global.h"
 #include "Macros.h"
 #include "Schema.h"
 #include "Twine.h"

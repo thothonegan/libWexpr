@@ -93,6 +93,16 @@ static inline void wexprSchema_Twine_init_CStr_CStr (WexprSchemaTwine* self, con
 }
 
 //
+/// \brief Init the twine with a twine and an empty
+//
+static inline void wexprSchema_Twine_init_Twine_empty (WexprSchemaTwine* self, WexprSchemaTwine* lhs)
+{
+	self->lhsType = WexprSchemaTwineChildTypeTwine;
+	self->lhs.twine = lhs;
+	self->rhsType = WexprSchemaTwineChildTypeEmpty;
+}
+
+//
 /// \brief Init the twine with a twine and a cstring
 //
 static inline void wexprSchema_Twine_init_Twine_CStr (WexprSchemaTwine* self, WexprSchemaTwine* lhs, const char* rhs)
@@ -119,6 +129,11 @@ static inline void wexprSchema_Twine_init_Twine_Twine (WexprSchemaTwine* self, W
 /// \return Returns true if it succeeds, false if an error occurs
 //
 bool wexprSchema_Twine_resolveToCString (WexprSchemaTwine* self, char* buffer, int bufferLength, int* outBufferLength);
+
+//
+/// \brief Does the resolved twine end with the requested string?
+//
+bool wexprSchema_Twine_endsWith (WexprSchemaTwine* self, const char* postfix);
 
 LIBWEXPR_EXTERN_C_END()
 

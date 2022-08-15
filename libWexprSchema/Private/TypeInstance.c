@@ -10,10 +10,15 @@
 
 #include "TypeRef.h"
 
+#define DEBUG_LOGSTDERR 0
+
 struct WexprSchemaTypeInstance
 {
 	char* m_description;
 	WexprSchemaPrivateTypeRef* m_type;
+	
+	// If true, this specific property is optional and can be null/invalid.
+	bool m_optional;
 };
 
 WexprSchemaTypeInstance* wexprSchema_TypeInstance_createFromExpression (WexprExpression* expression)
@@ -21,6 +26,7 @@ WexprSchemaTypeInstance* wexprSchema_TypeInstance_createFromExpression (WexprExp
 	WexprSchemaTypeInstance* self = malloc(sizeof(WexprSchemaTypeInstance));
 	self->m_description = LIBWEXPR_NULLPTR;
 	self->m_type = LIBWEXPR_NULLPTR;
+	self->m_optional = false;
 	
 	WexprExpression* desc = wexpr_Expression_mapValueForKey(expression, "description");
 	if (desc)
@@ -32,6 +38,17 @@ WexprSchemaTypeInstance* wexprSchema_TypeInstance_createFromExpression (WexprExp
 	if (typeName)
 	{
 		self->m_type = wexprSchema_PrivateTypeRef_createWithName(wexpr_Expression_value(typeName));
+	}
+	
+	WexprExpression* optionalExpr = wexpr_Expression_mapValueForKey(expression, "optional");
+	if (optionalExpr)
+	{
+		const char* optionalStr = wexpr_Expression_value(optionalExpr);
+		
+		if (strcmp(optionalStr, "true") == 0)
+		{
+			self->m_optional = true;
+		}
 	}
 	
 	return self;
@@ -55,6 +72,10 @@ bool wexprSchema_TypeInstance_resolveWithSchema(WexprSchemaTypeInstance* self, s
 	}
 	
 	const char* name = wexprSchema_PrivateTypeRef_name(self->m_type);
+#if DEBUG_LOGSTDERR
+	fprintf (stderr, "TypeInstance - Resolving with schema : name = %s\n", name);
+#endif
+	
 	WexprSchemaType* resolvedType = wexprSchema_Schema_typeWithName(schema, name);
 	if (resolvedType)
 		wexprSchema_PrivateTypeRef_resolveWith(self->m_type, resolvedType);
@@ -70,15 +91,72 @@ bool wexprSchema_TypeInstance_resolveWithSchema(WexprSchemaTypeInstance* self, s
 
 			*error = wexprSchema_Error_create(
 				WexprSchemaErrorInternal,
-				"[schema]",
+				"[schema:typeinstance]",
 				errBuffer,
 				LIBWEXPR_NULLPTR,
 				*error
 			);
 		}
 
+#if DEBUG_LOGSTDERR
+	fprintf (stderr, "TypeInstance - FAILED TO RESOLVE\n");
+#endif
 		return false;
 	}
 	
+	if (!wexprSchema_PrivateTypeRef_isResolved(self->m_type))
+	{
+		fprintf(stderr, "INTERNAL ERROR: TypeInstance: Success on resolve, yet we're not resolved.\n");
+		abort();
+	}
+	
+#if DEBUG_LOGSTDERR
+	fprintf (stderr, "TypeInstance - Succeeded resolution\n");
+#endif
 	return true;
+}
+
+// --- public Validation
+
+bool wexprSchema_TypeInstance_validateObject (
+	WexprSchemaTypeInstance* self,
+	WexprSchemaTwine* objectPath,
+	WexprExpression* expression,
+	WexprSchemaError** error
+)
+{
+	if (!wexprSchema_PrivateTypeRef_isResolved(self->m_type))
+	{
+		char errBuffer[256] = {0};
+		wexprSchema_Twine_resolveToCString(objectPath, errBuffer, sizeof(errBuffer), LIBWEXPR_NULLPTR);
+					
+		char msgBuffer[512] = {0};
+		sprintf(msgBuffer, "Type for type instance not resolved: %s", wexprSchema_PrivateTypeRef_name(self->m_type));
+		
+		*error = wexprSchema_Error_create(
+			WexprSchemaErrorInternal,
+			errBuffer,
+			msgBuffer,
+			LIBWEXPR_NULLPTR,
+			*error
+		);
+		
+		return false;
+	}
+	
+	WexprExpressionType expressionType = (expression ? wexpr_Expression_type(expression) : WexprExpressionTypeInvalid);
+	
+	// special case, if expressionType is null or invalid and we're not required, we can short circuit
+	if (self->m_optional && (expressionType == WexprExpressionTypeNull || expressionType == WexprExpressionTypeInvalid))
+	{
+		return true;
+	}
+	
+	// resolve it against the type
+	return wexprSchema_Type_validateObject(
+		wexprSchema_PrivateTypeRef_type(self->m_type),
+		objectPath,
+		expression,
+		error
+	);
 }

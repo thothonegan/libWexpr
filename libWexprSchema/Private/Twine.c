@@ -80,3 +80,22 @@ bool wexprSchema_Twine_resolveToCString (WexprSchemaTwine* self, char* buffer, i
 
 	return success;
 }
+
+bool wexprSchema_Twine_endsWith (WexprSchemaTwine* self, const char* postfix)
+{
+	char buffer[512] = {0};
+	
+	int outLength = 0;
+	if (!wexprSchema_Twine_resolveToCString(self, buffer, sizeof(buffer), &outLength))
+	{
+		fprintf(stderr, "Unable to resolve to buffer for wexprSchema_Twine_endsWith()");
+		exit(1);
+	}
+	
+	int len = strlen(postfix);
+	
+	if (strcmp(buffer+outLength-len, postfix) == 0)
+		return true;
+	
+	return false;
+}

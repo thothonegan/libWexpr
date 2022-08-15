@@ -46,6 +46,24 @@ bool wexprSchema_TypeInstance_resolveWithSchema(WexprSchemaTypeInstance* self, s
 
 /// \}
 
+/// \name Validation
+/// \relates WexprSchemaTypeInstance
+/// \{
+
+//
+/// \brief Valiate the given object against this TypeInstance. Will validate against the type we're registered.
+/// Expression can be null if theirs no expression on the other side
+/// \return Success or failure. If failure, the reason should be within error (if provided).
+//
+bool wexprSchema_TypeInstance_validateObject (
+	WexprSchemaTypeInstance* self,
+	WexprSchemaTwine* objectPath,
+	WexprExpression* expression,
+	WexprSchemaError** error
+);
+
+/// \}
+
 LIBWEXPR_EXTERN_C_END()
 
 #endif // LIBWEXPRSCHEMA_TYPEINSTANCE_H
