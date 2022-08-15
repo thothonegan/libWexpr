@@ -533,7 +533,8 @@ WexprSchemaType* wexprSchema_Type_createFromExpression (const char* name, WexprE
 #if DEBUG_LOGSTDERR
 			fprintf(stderr, "Type_createFromExpression('%s') Found regex %s\n", name, str);
 #endif
-		OnigErrorInfo einfo = {};
+		OnigErrorInfo einfo;
+		memset (&einfo, 0, sizeof(einfo));
 		int r = onig_new(&(self->m_valueRegex),
 			(const unsigned char*) str,
 			(const unsigned char*) (str + strlen(str)),
