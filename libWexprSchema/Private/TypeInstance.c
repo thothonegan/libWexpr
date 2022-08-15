@@ -31,7 +31,7 @@ WexprSchemaTypeInstance* wexprSchema_TypeInstance_createFromExpression (WexprExp
 	WexprExpression* desc = wexpr_Expression_mapValueForKey(expression, "description");
 	if (desc)
 	{
-		self->m_description = strdup(wexpr_Expression_value(desc));
+		self->m_description = LIBWEXPR_STRDUP(wexpr_Expression_value(desc));
 	}
 	
 	WexprExpression* typeName = wexpr_Expression_mapValueForKey(expression, "type");

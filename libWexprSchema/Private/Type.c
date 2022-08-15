@@ -12,7 +12,7 @@
 #include <libWexprSchema/Schema.h>
 #include <libWexprSchema/TypeInstance.h>
 
-#include <Onigmo/onigmo.h>
+#include "ExternalOnigmo.h"
 
 #include <stdio.h>
 
@@ -466,7 +466,7 @@ WexprSchemaType* wexprSchema_Type_createFromExpression (const char* name, WexprE
 	self->m_valueRegex = NULL;
 	self->m_valueRegexString = NULL;
 
-	self->m_name = strdup(name);
+	self->m_name = LIBWEXPR_STRDUP(name);
 	self->m_mapProperties = hashmap_new();
 	self->m_arrayAllElements = NULL;
 	self->m_mapAllowAdditionalProperties = false;
@@ -476,7 +476,7 @@ WexprSchemaType* wexprSchema_Type_createFromExpression (const char* name, WexprE
 	WexprExpression* desc = wexpr_Expression_mapValueForKey(expression, "description");
 	if (desc)
 	{
-		self->m_description = strdup(wexpr_Expression_value(desc));
+		self->m_description = LIBWEXPR_STRDUP(wexpr_Expression_value(desc));
 	}
 
 	WexprExpression* primitiveType = wexpr_Expression_mapValueForKey(expression, "primitiveType");
@@ -528,7 +528,7 @@ WexprSchemaType* wexprSchema_Type_createFromExpression (const char* name, WexprE
 	if (valueRegexExpr)
 	{
 		const char* str = wexpr_Expression_value(valueRegexExpr);
-		self->m_valueRegexString = strdup(str);
+		self->m_valueRegexString = LIBWEXPR_STRDUP(str);
 		
 #if DEBUG_LOGSTDERR
 			fprintf(stderr, "Type_createFromExpression('%s') Found regex %s\n", name, str);
@@ -573,7 +573,7 @@ WexprSchemaType* wexprSchema_Type_createFromExpression (const char* name, WexprE
 			
 			// SchemaTypeDefinition
 			WexprSchemaType_MapProperty* prop = malloc(sizeof(WexprSchemaType_MapProperty));
-			prop->key = strdup(keyName);
+			prop->key = LIBWEXPR_STRDUP(keyName);
 			prop->value = wexprSchema_TypeInstance_createFromExpression(value);
 			
 #if DEBUG_LOGSTDERR

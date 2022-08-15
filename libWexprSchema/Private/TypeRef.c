@@ -18,7 +18,9 @@ SGLIB_DEFINE_LIST_FUNCTIONS (WexprSchemaPrivateTypeRef, WEXPRSCHEMAPRIVATETYPERE
 WexprSchemaPrivateTypeRef* wexprSchema_PrivateTypeRef_createWithName(const char* name)
 {
 	WexprSchemaPrivateTypeRef* self = malloc(sizeof(WexprSchemaPrivateTypeRef));
-	self->typeName = strdup(name);
+	if (self == LIBWEXPR_NULLPTR) { return LIBWEXPR_NULLPTR; }
+
+	self->typeName = LIBWEXPR_STRDUP(name);
 	self->type = LIBWEXPR_NULLPTR;
 	self->next = LIBWEXPR_NULLPTR;
 	

@@ -23,7 +23,7 @@ static bool s_writeOutChild (WexprSchemaTwineChildType type, WexprSchemaTwineChi
 		case WexprSchemaTwineChildTypeCStringWithLength:
 		case WexprSchemaTwineChildTypeCString:
 		{
-			int len;
+			size_t len;
 			const char* buf;
 
 			if (type == WexprSchemaTwineChildTypeCStringWithLength)

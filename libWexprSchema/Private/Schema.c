@@ -20,12 +20,12 @@
 
 #include "../../libWexpr/Private/ThirdParty/sglib/sglib.h"
 
-static bool s_stringStartsWith (const char* haystack, long haystackLength, const char* needle, long needleLength)
+static bool s_stringStartsWith (const char* haystack, size_t haystackLength, const char* needle, size_t needleLength)
 {
 	if (haystackLength < needleLength) // cant fit
 		return false;
 
-	for (int i=0; i < needleLength; ++i)
+	for (size_t i=0; i < needleLength; ++i)
 	{
 		if (haystack[i] != needle[i])
 			return false;
@@ -249,17 +249,17 @@ static bool s_loadFromSchemaID (WexprSchemaSchema* self, const char* schemaID, W
 	// now load the rest
 	WexprExpression* id = wexpr_Expression_mapValueForKey(wexpr, "$id");
 	if (id) {
-		self->m_id = strdup(wexpr_Expression_value(id));
+		self->m_id = LIBWEXPR_STRDUP(wexpr_Expression_value(id));
 	}
 
 	WexprExpression* title = wexpr_Expression_mapValueForKey(wexpr, "title");
 	if (title) {
-		self->m_title = strdup(wexpr_Expression_value(title));
+		self->m_title = LIBWEXPR_STRDUP(wexpr_Expression_value(title));
 	}
 
 	WexprExpression* description = wexpr_Expression_mapValueForKey(wexpr, "description");
 	if (description) {
-		self->m_description = strdup(wexpr_Expression_value(description));
+		self->m_description = LIBWEXPR_STRDUP(wexpr_Expression_value(description));
 	}
 
 	// types

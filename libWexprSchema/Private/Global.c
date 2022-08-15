@@ -8,7 +8,7 @@
 
 #include <libWexprSchema/Global.h>
 
-#include <Onigmo/onigmo.h>
+#include "ExternalOnigmo.h"
 
 void wexprSchema_Global_init()
 {

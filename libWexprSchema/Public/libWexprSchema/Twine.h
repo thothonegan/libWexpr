@@ -38,7 +38,7 @@ typedef union WexprSchemaTwineChild
 	/// WexprSchemaTwineChildTypeCString: cstring with length
 	struct {
 		const char* cString;
-		unsigned int length;
+		size_t length;
 	} cStringWithLength;
 
 	/// WexprSchemaTWineChildTypeTwine: The twine we're pointing at

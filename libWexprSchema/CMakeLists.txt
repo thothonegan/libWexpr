@@ -19,6 +19,7 @@ project (libWexprSchema)
 	
 	set (libWexprSchema_SOURCES
 		${CMAKE_CURRENT_SOURCE_DIR}/Private/Error.c
+		${CMAKE_CURRENT_SOURCE_DIR}/Private/ExternalOnigmo.h
 		${CMAKE_CURRENT_SOURCE_DIR}/Private/Global.c
 		${CMAKE_CURRENT_SOURCE_DIR}/Private/libWexprSchema.c
 		${CMAKE_CURRENT_SOURCE_DIR}/Private/PrimitiveType.c
