@@ -286,7 +286,7 @@ Linux-X86_64@Clang@@~Debug:Deploy:
 
 
 
-Linux-X86_64@Clang@@~Release:Prepare:
+Linux-X86_64@Clang@@~RelWithDebInfo:Prepare:
     image: docker.i.hackerguild.com/hackerguild/hackerguild-gitlabci-docker:latest
 
     except:
@@ -294,7 +294,7 @@ Linux-X86_64@Clang@@~Release:Prepare:
 
     # no artifacts - this just caches and makes sure our deps are good
     cache:
-        key: "Linux-X86_64@Clang@@~Release"
+        key: "Linux-X86_64@Clang@@~RelWithDebInfo"
         paths:
         - _HGuild/
 
@@ -307,7 +307,7 @@ Linux-X86_64@Clang@@~Release:Prepare:
         
     variables:
         HGUILD_PROFILE: Linux-X86_64@Clang@@
-        HGUILD_BUILDTYPE: Release
+        HGUILD_BUILDTYPE: RelWithDebInfo
 
     before_script:
         - *hguild_before_script
@@ -318,21 +318,21 @@ Linux-X86_64@Clang@@~Release:Prepare:
         - echo -e "section_end:`date +%s`:hguild_install_deps\r\033[0K"
 
 
-Linux-X86_64@Clang@@~Release:Build:
+Linux-X86_64@Clang@@~RelWithDebInfo:Build:
     image: docker.i.hackerguild.com/hackerguild/hackerguild-gitlabci-docker:latest
 
     except:
       - schedules
 
     needs:
-      - Linux-X86_64@Clang@@~Release:Prepare
+      - Linux-X86_64@Clang@@~RelWithDebInfo:Prepare
     
     artifacts:
         paths:
-        - _HGuild/Install/Linux-X86_64@Clang@@/Release/${HGUILD_PROJECT_NAME}@CI
+        - _HGuild/Install/Linux-X86_64@Clang@@/RelWithDebInfo/${HGUILD_PROJECT_NAME}@CI
             
     cache:
-        key: "Linux-X86_64@Clang@@~Release"
+        key: "Linux-X86_64@Clang@@~RelWithDebInfo"
         paths:
         - _HGuild/
  
@@ -345,7 +345,7 @@ Linux-X86_64@Clang@@~Release:Build:
         
     variables:
         HGUILD_PROFILE: Linux-X86_64@Clang@@
-        HGUILD_BUILDTYPE: Release
+        HGUILD_BUILDTYPE: RelWithDebInfo
 
     before_script:
         - *hguild_before_script
@@ -356,7 +356,7 @@ Linux-X86_64@Clang@@~Release:Build:
         - echo -e "section_end:`date +%s`:hguild_build_and_install\r\033[0K"
         # For at least eslint, it'll run as a different user, while the CI runs as root
         # thinlto.cache however doesnt allow read access to other users - adjust that just within CI
-        - find _HGuild/Build/Linux-X86_64@Clang@@/Release/${HGUILD_PROJECT_NAME}@CI -name 'thinlto.cache' -exec chmod -Rv o+rx '{}' ';'
+        - find _HGuild/Build/Linux-X86_64@Clang@@/RelWithDebInfo/${HGUILD_PROJECT_NAME}@CI -name 'thinlto.cache' -exec chmod -Rv o+rx '{}' ';'
 
 
 
@@ -365,18 +365,18 @@ Linux-X86_64@Clang@@~Release:Build:
 
 
 
-Linux-X86_64@Clang@@~Release:Package:
+Linux-X86_64@Clang@@~RelWithDebInfo:Package:
     image: docker.i.hackerguild.com/hackerguild/hackerguild-gitlabci-docker:latest
 
     variables:
         HGUILD_PROFILE: Linux-X86_64@Clang@@
-        HGUILD_BUILDTYPE: Release
+        HGUILD_BUILDTYPE: RelWithDebInfo
         PACKAGE_NAME: ${HGUILD_PROJECT_NAME}@CI-${HGUILD_PROFILE}_${HGUILD_BUILDTYPE}.hguildpkg
 
     dependencies:
-        - Linux-X86_64@Clang@@~Release:Build
+        - Linux-X86_64@Clang@@~RelWithDebInfo:Build
     needs:
-        - Linux-X86_64@Clang@@~Release:Build
+        - Linux-X86_64@Clang@@~RelWithDebInfo:Build
     except:
       - schedules
 
@@ -385,7 +385,7 @@ Linux-X86_64@Clang@@~Release:Package:
         - ${PACKAGE_NAME}
             
     cache:
-        key: "Linux-X86_64@Clang@@~Release"
+        key: "Linux-X86_64@Clang@@~RelWithDebInfo"
         paths:
         - _HGuild/
  
@@ -405,7 +405,7 @@ Linux-X86_64@Clang@@~Release:Package:
 
 
 
-Linux-X86_64@Clang@@~Release:Deploy:
+Linux-X86_64@Clang@@~RelWithDebInfo:Deploy:
     image: docker.i.hackerguild.com/hackerguild/hackerguild-gitlabci-docker:latest
     only:
         - tags   # tags are stable
@@ -415,13 +415,13 @@ Linux-X86_64@Clang@@~Release:Deploy:
     # package has no needs - requires everyone to finish the previous stages, and all tests to pass
     # we do want artifacts though from our build
     dependencies:
-        - Linux-X86_64@Clang@@~Release:Package
+        - Linux-X86_64@Clang@@~RelWithDebInfo:Package
     except:
         - schedules
 
     variables:
         HGUILD_PROFILE: Linux-X86_64@Clang@@
-        HGUILD_BUILDTYPE: Release
+        HGUILD_BUILDTYPE: RelWithDebInfo
         PACKAGE_NAME: ${HGUILD_PROJECT_NAME}@CI-${HGUILD_PROFILE}_${HGUILD_BUILDTYPE}.hguildpkg
 
     artifacts:
@@ -429,7 +429,7 @@ Linux-X86_64@Clang@@~Release:Deploy:
         - ${PACKAGE_NAME}
             
     cache:
-        key: "Linux-X86_64@Clang@@~Release"
+        key: "Linux-X86_64@Clang@@~RelWithDebInfo"
         paths:
         - _HGuild/
 
