@@ -28,11 +28,13 @@ if (CATALYST_INSTALL_PREFIX) # use catalyst on top of cmake
 	include (Catalyst)
 	
 	catalyst_module_declare (libWexpr)
-
+	catalyst_module_declare (libWexprSchema)
+	catalyst_module_load(MbedTLS) # dependency of curl
 endif ()
 
 # Documentation
 add_subdirectory (Documentation/Doxygen)
 
 add_subdirectory (libWexpr)
+add_subdirectory (libWexprSchema)
 add_subdirectory (WexprTool)

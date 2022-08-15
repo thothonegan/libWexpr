@@ -45,6 +45,12 @@
 #include "ThirdParty/sglib/sglib.h"
 #include "ThirdParty/c_hashmap/hashmap.h"
 
+#ifdef NDEBUG
+	#define DEBUG_ASSERT 0
+#else
+	#define DEBUG_ASSERT 1
+#endif
+
 // --- structures
 
 typedef struct WexprExpressionPrivateArrayElement
@@ -605,7 +611,7 @@ static PrivateWexprValueStringProperties s_wexprValueStringProperties (PrivateSt
 		props.writeByteSize += 1;
 		
 		// does it need to be escaped?
-		if (c == '"')
+		if (s_requiresEscape(c))
 		{ props.writeByteSize += 1; } // needs the escape
 	}
 	
@@ -1384,12 +1390,17 @@ void s_fillIndent (char* buffer, size_t indent)
 /// - if stringProps.isBarewordSafe : writeBuffer must have stringProps.writeByteSize (strlen(string)) length
 /// - if stringProps.isBarewordSafe : writeBuffer must have stringProps.writeByteSize + 2 size (we will  write the quotes)
 //
-void s_writeStringEscapedToBuffer(char* writeBuffer, const char* string, size_t stringLength, PrivateWexprValueStringProperties props)
+void s_writeStringEscapedToBuffer(char* writeBuffer, size_t bufferLength, const char* string, size_t stringLength, PrivateWexprValueStringProperties props)
 {
+#if DEBUG_ASSERT
+	size_t startBufferLength = bufferLength;
+#endif
+	
 	if (!props.isBarewordSafe)
 	{
 		*writeBuffer = '\"';
 		writeBuffer += 1;
+		bufferLength -= 1;
 	}
 
 	for (size_t i=0; i < stringLength; ++i)
@@ -1398,20 +1409,45 @@ void s_writeStringEscapedToBuffer(char* writeBuffer, const char* string, size_t 
 		
 		if (s_requiresEscape(c))
 		{
+#if DEBUG_ASSERT
+		if (bufferLength <= 0) {
+			fprintf(stderr, "!! s_writeStringEscapedToBuffer() - Buffer length was not big enough - overrun on escape character\n");
+			exit (1);
+		}
+#endif
 			// write it out as an escape
 			*(writeBuffer) = '\\';
 			*(writeBuffer+1) = s_escapeForValue(c);
 			writeBuffer += 2;
+			bufferLength -= 2;
 		}
 		else
 		{
+#if DEBUG_ASSERT
+		if (bufferLength <= 0) {
+			fprintf(stderr, "!! s_writeStringEscapedToBuffer() - Buffer length was not big enough - overrun on non-escape character\n");
+			exit (1);
+		}
+#endif
+			
 			*(writeBuffer) = c;
 			++writeBuffer;
+			--bufferLength;
 		}
 	}
 	
 	if (!props.isBarewordSafe)
 	{
+#if DEBUG_ASSERT
+		if (bufferLength <= 0) {
+			fprintf(stderr,
+				"!! s_writeStringEscapedToBuffer() - Buffer length was not big enough - overrun on ending quote: str='%.*s' (len: %zu) to buffer length %zu\n",
+				(int)stringLength, string, stringLength, startBufferLength
+			);
+			exit (1);
+		}
+#endif
+		
 		// add quotes
 		*writeBuffer = '\"';
 	}
@@ -1462,9 +1498,13 @@ static PrivateStringRef p_wexpr_Expression_appendStringRepresentationToAllocated
 		size_t newSize = curBufferSize + props.writeByteSize + (props.isBarewordSafe ? 0 : 2); // add quotes if needed
 		newBuffer = realloc (newBuffer, newSize);
 		
+#if 0 // DEBUG
+		fprintf(stderr, "CUR: %zu PROPS WRITE SIZE: %zu BAREWORD: %d NEW: %zu\n", curBufferSize, props.writeByteSize, (props.isBarewordSafe ? 1 : 0), newSize);
+#endif
+		
 		// copy the value, taking into account quotes or not
 		char* writeBuffer = newBuffer+curBufferSize;
-		s_writeStringEscapedToBuffer(writeBuffer, value, len, props);
+		s_writeStringEscapedToBuffer(writeBuffer, newSize-curBufferSize, value, len, props);
 
 		return s_stringRef_createFromPointerSize(newBuffer, newSize);
 	}
@@ -1633,7 +1673,7 @@ static PrivateStringRef p_wexpr_Expression_appendStringRepresentationToAllocated
 				newSize += indentBytes + keyMemoryLength + 1; // get us to the object
 				newBuffer = realloc(newBuffer, newSize);
 				s_fillIndent(newBuffer+prevSize, indent+1);
-				s_writeStringEscapedToBuffer(newBuffer+prevSize+indentBytes, key, keyLength, keyProps);
+				s_writeStringEscapedToBuffer(newBuffer+prevSize+indentBytes, newSize-prevSize-indentBytes, key, keyLength, keyProps);
 				newBuffer[newSize-1] = ' ';
 				
 				// add the value
@@ -1667,7 +1707,7 @@ static PrivateStringRef p_wexpr_Expression_appendStringRepresentationToAllocated
 					newSize += 2; // quotes
 
 				newBuffer = realloc(newBuffer, newSize);
-				s_writeStringEscapedToBuffer(newBuffer+prevSize, key, keyLength, keyProps);
+				s_writeStringEscapedToBuffer(newBuffer+prevSize, newSize-prevSize, key, keyLength, keyProps);
 				newBuffer[newSize-1] = ' ';
 				
 				// add our value

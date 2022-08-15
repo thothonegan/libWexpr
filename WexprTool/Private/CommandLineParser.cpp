@@ -33,6 +33,8 @@
 
 #include <iostream>
 
+#include <libWexpr/libWexpr.h>
+
 namespace
 {
 	CommandLineParser::Command s_commandFromString (const std::string& str)
@@ -78,6 +80,7 @@ CommandLineParser::Results CommandLineParser::parse(int argc, char ** argv)
 			if ( (argIndex+1) < argc)
 			{
 				r.inputPath = argv[argIndex+1];
+				++argIndex;
 			}
 		}
 		
@@ -86,6 +89,31 @@ CommandLineParser::Results CommandLineParser::parse(int argc, char ** argv)
 			if ( (argIndex+1) < argc)
 			{
 				r.outputPath = argv[argIndex+1];
+				++argIndex;
+			}
+		}
+
+		else if (arg == "-s" || arg == "--schema")
+		{
+			if ((argIndex+1) < argc)
+			{
+				r.schemaID = argv[argIndex+1];
+				++argIndex;
+			}
+		}
+
+		else if (arg == "-m" || arg == "--schemaMap")
+		{
+			if ((argIndex+1) < argc)
+			{
+				std::string mappingStr = argv[argIndex+1];
+				if (!p_addMappingFromWexprString(r, mappingStr))
+				{
+					std::cerr << "Failed to add mapping: " << mappingStr << std::endl;
+					abort();
+				}
+
+				++argIndex;
 			}
 		}
 	}
@@ -103,13 +131,59 @@ void CommandLineParser::displayHelp(int argc, char** argv)
 	cout << "Performs operations on wexpr data" << std::endl;
 	cout << std::endl;
 	cout << "-c, --cmd     Perform the requested command" << std::endl;
-	cout << "              humanReadable - [default] Makes the wexpr input human readable and outputs." << std::endl;
-	cout << "              validate      - Checks the wexpr. If valid outputs 'true' and returns 0, otherwise 'false' and 1." << std::endl;
-	cout << "              mini          - Minifies the wexpr output" << std::endl;
-	cout << "              binary        - Write the wexpr out as binary" << std::endl;
+	cout << "              humanReadable      - [default] Makes the wexpr input human readable and outputs." << std::endl;
+	cout << "              validate           - Checks the wexpr for correct syntax. If valid outputs 'true' and returns 0, otherwise 'false' and 1." << std::endl;
+	cout << "              mini               - Minifies the wexpr output" << std::endl;
+	cout << "              binary             - Write the wexpr out as binary" << std::endl;
 	cout << std::endl;
 	cout << "-i, --input   The input file to read from (default is -, stdin)." << std::endl;
 	cout << "-o, --output  The place to write the output (default is -, stdout)." << std::endl;
+	cout << "-s, --schema  (validate) If provided, will also validate it against the given schema (or if the magic value '(internal)' it'll use the $schema on the root object)." << std::endl;
+	cout << "-m, --schemaMap '#(originalId newPath)' If provided as a 2 wexpr array, will map the given ID to the given location to load from. Can be multiple times for differnet IDs." << std::endl;
 	cout << "-h, --help    Display this help and exit" << std::endl;
 	cout << "-v, --version Output the version and exit" << std::endl;
+}
+
+// --- private
+
+bool CommandLineParser::p_addMappingFromWexprString (Results& res, const std::string& mappingStr)
+{
+	// parse as wexpr.
+	WexprError err = WEXPR_ERROR_INIT();
+	WexprExpression* expr = wexpr_Expression_createFromLengthString(
+		mappingStr.c_str(), mappingStr.size(),
+		WexprParseFlagNone,
+		&err
+	);
+
+	if (err.code)
+	{
+		std::cerr << "WexprTool: Error occurred with schemaMap wexpr:" << std::endl;
+		std::cerr << "WexprTool: [schemaMap]:" << err.line << ":" << err.column << ": " << err.message << std::endl;
+		return false;
+	}
+
+	if (!expr)
+	{
+		std::cerr << "WexprTool: Got an empty expression back " << std::endl;
+		return false;
+	}
+
+	WEXPR_ERROR_FREE(err);
+
+	if (wexpr_Expression_type(expr) != WexprExpressionTypeArray
+		|| wexpr_Expression_arrayCount(expr) != 2
+		|| wexpr_Expression_type(wexpr_Expression_arrayAt(expr, 0)) != WexprExpressionTypeValue
+		|| wexpr_Expression_type(wexpr_Expression_arrayAt(expr, 1)) != WexprExpressionTypeValue
+	)
+	{
+		std::cerr << "WexprTool: SchemaMap entry must be an array of 2 values" << std::endl;
+		return false;
+	}
+
+	std::string schemaID = wexpr_Expression_value(wexpr_Expression_arrayAt(expr, 0));
+	std::string schemaPath = wexpr_Expression_value(wexpr_Expression_arrayAt(expr, 1));
+
+	res.schemaMappings[schemaID] = schemaPath;
+	return true;
 }

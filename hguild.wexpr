@@ -4,9 +4,12 @@
 
 	dependencies #(
 		@(type "repository" name "Catalyst")
+		@(type "repository" name "External-Curl")
+		@(type "repository" name "External-Onigmo")
 	)
 	
 	runCommands @(
+		WexprTool_gdb @(command "gdb --args ${INSTALL_PATH}/Tools/WexprTool ${ARGS}")
 		WexprTool @(command "${INSTALL_PATH}/Tools/WexprTool ${ARGS}")
 	)
 )

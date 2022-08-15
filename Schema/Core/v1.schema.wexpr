@@ -1,0 +1,268 @@
+; Wexpr schemas allow validating a wexpr expression against a set of rules.
+; Validation can be ran at compile time to make sure its compiled
+; WexprTool can validate
+
+; Wexpr schema for schemas.
+@(
+	$id "https://wexpr.hackerguild.com/versions/1.schema.wexpr"
+	$schema "https://wexpr.hackerguild.com/versions/1.schema.wexpr"
+	
+	title "Core Wexpr Schema"
+	description "Provides a schema for Wexpr schemas"
+	
+	$types @(
+		; ---- core Wexpr types - just sets the basic type restrictions
+
+		Null @(
+			primitiveType "nullType"
+			description "A nullable value"
+		)
+
+		Value @(
+			primitiveType "value"
+			description "A value (string)"
+		)
+
+		Array @(
+			primitiveType "array"
+			description "An array of values"
+		)
+
+		Map @(
+			primitiveType "map"
+			description "A map of values"
+			
+			; A map itself allows additional properties (since it just has to meet the map).
+			; This wont affect derived types, which will by default limit.
+			mapAllowAdditionalProperties true
+		)
+
+		BinaryData @(
+			primitiveType "binaryData"
+			description "A set of binary data"
+		)
+
+		; --- more complex but useful types
+
+		SchemaID @(
+			type Value
+			description "The ID of a schema - generally the path or url to the schema"
+		)
+
+		Boolean @(
+			type Value
+			description "A boolean value (true/false)"
+			valueRegex "(true|false)"
+		)
+
+		Integer @(
+			type Value
+			description "An integer of any size"
+
+			valueRegex "-?[0-9]+"
+		)
+
+		RealNumber @(
+			type Value
+			description "A floating point/real number of any size"
+			valueRegex "-?[0-9]+(\\.[0-9]+)?"
+		)
+
+		PrimitiveTypeName @(
+			type Value
+			description "Name of a primitive type"
+			valueRegex "(nullType|value|array|map|binaryData)"
+		)
+		
+		; --- schema specific objects
+		SchemaSimpleTypeName @(
+			type Value
+			description "Represents a type in the wexpr type system (simple - within a document)"
+			valueRegex "[a-zA-Z]+"
+		)
+		
+		SchemaTypeName @(
+			type Value
+			description "Represents a type in the wexpr type system (possibly a reference)"
+			valueRegex "([a-zA-Z]+::)?[a-zA-Z]+"
+		)
+
+		SchemaTypeNames @(
+			type #(SchemaTypeName Array)
+			description "Represents a single or multiple types that are supported"
+
+			arrayAllElements @(
+				type SchemaTypeName
+				description "A type the property could be"
+			)
+		)
+
+		SchemaTypeInstanceDefinition @(
+			type Map
+			description "Instances a type (such as for a property)"
+
+			mapProperties @(
+				type @(
+					type SchemaTypeName
+					description "The type it must meet"
+				)
+
+				description @(
+					type Value
+					description "The description of the instance of the type"
+				)
+
+				optional @(
+					type Boolean
+					description "If false, this specific instance is required within its context. Default is false."
+					optional true
+					; note - in some cases, this doesnt make any sense (array, all map properties)
+				)
+			)
+		)
+
+		SchemaTypeDefinition @(
+			type Map
+			description "Full definition of a type"
+
+			mapProperties @(
+				type @(
+					type SchemaTypeNames
+					description "The set of possible types the property supports"
+					optional true ; though you need either type or primitiveType
+				)
+
+				primitiveType @(
+					type PrimitiveTypeName
+					description "The primitive type thats supported"
+					optional true ; need Type if not primitiveType
+				)
+				
+				description @(
+					type Value
+					description "Description of this type in the schema"
+				)
+
+				optional @(
+					type Boolean
+					description "If true, this property is optional. Otherwise, its required."
+					optional true
+				)
+				
+				; --- value specific properties
+
+				valueRegex @(
+					type Value
+					description "Regular expression required to meet this value"
+					optional true
+				)
+
+				; --- array specific properties
+
+				arrayAllElements @(
+					type SchemaTypeInstanceDefinition
+					description "If set, the definition every element of the array must meet"
+					optional true
+				)
+
+				; --- map specific properties
+
+				mapKeyType @(
+					type SchemaTypeName
+					description "If set, the type map keys must resolve to. If unset, Value is assumed (e.g. Wexpr's default rule)."
+					optional true
+				)
+
+				mapAllProperties @(
+					type SchemaTypeInstanceDefinition
+					description "If set, the definition of every map key must meet this type"
+					optional true
+				)
+
+				mapProperties @(
+					type Map
+					description "The list of properties that the map will validate"
+					optional true
+
+					mapAllProperties @(
+						type SchemaTypeInstanceDefinition
+						description "A specific property to validate within the Map"
+					)
+				)
+
+				mapAllowAdditionalProperties @(
+					type Boolean
+					description "If false, properties not listed in 'mapProperties' (and no 'mapAllProperties' set) will be an error. If true, it will be allowed and ignored. Default is false (dont allow unknown properties)."
+					optional true
+				)
+			)
+		)
+		
+		SchemaRefMap @(
+			type Map
+			description "A map refering to other schemas"
+			
+			mapKeyType SchemaID
+			mapAllProperties @(
+				type SchemaID
+				description "The schema to load"
+			)
+		)
+		
+		SchemaTypeDefinitionMap @(
+			type Map
+			description "A map listing type definitions"
+			
+			mapKeyType SchemaSimpleTypeName
+			mapAllProperties @(
+				type SchemaTypeDefinition
+				description "Definition of a type"
+			)
+		)
+		SchemaRoot @(
+			type Map
+			description "The schema"
+
+			mapProperties @(
+				$id @(
+					type SchemaID
+					description "Id to refer to the schema"
+				)
+				
+				$schema @(
+					type SchemaID
+					description "Source path to the version of the schema being used"
+				)
+				
+				title @(
+					type Value
+					description "Title of the schema"
+				)
+				
+				description @(
+					type Value
+					description "Description of the schema"
+				)
+				
+				$refs @(
+					type SchemaRefMap
+					description "Possible references to other schemas"
+					optional true
+				)
+
+				rootType @(
+					type SchemaTypeName
+					description "The type of the root object in the wexpr document"
+				)
+				
+				$types @(
+					type SchemaTypeDefinitionMap
+					description "The list of types available"
+					optional true
+				)
+			) ; mapProperties
+		)
+	)
+	
+	rootType SchemaRoot
+)

@@ -32,6 +32,7 @@
 #include "CommandLineParser.hpp"
 
 #include <libWexpr/libWexpr.h>
+#include <libWexprSchema/libWexprSchema.h>
 
 #include <cstdlib>
 #include <cstring>
@@ -41,6 +42,26 @@
 namespace
 {
 	const uint32_t VersionHandled = 0x00001000; // 0.1.0
+	
+	void s_writeOutErrorWithIndent (WexprSchemaError* err, size_t indent)
+	{
+		while (err)
+		{
+			std::cerr << "WexprTool: "
+				<< wexprSchema_Error_objectPath(err) << ": "
+				<< std::string(indent*2, ' ')
+				<< "error: "
+				<< wexprSchema_Error_message(err) << std::endl;
+				
+			WexprSchemaError* child = wexprSchema_Error_childError(err);
+			if (child)
+			{
+				s_writeOutErrorWithIndent(child, indent+1);
+			}
+			
+			err = wexprSchema_Error_nextError(err);
+		}
+	}
 	
 	std::string s_readAllInputFrom (const std::string& inputPath)
 	{
@@ -121,11 +142,25 @@ namespace
 	}
 }
 
+class ApplicationSetup
+{
+	public:
+		ApplicationSetup () {
+			wexprSchema_Global_init();
+		}
+		~ApplicationSetup () {
+			wexprSchema_Global_free();
+		}
+};
+
 //
 /// \brief App entry point
 //
 int main (int argc, char** argv)
 {
+	ApplicationSetup appSetup;
+	(void) appSetup;
+	
 	auto results = CommandLineParser::parse (argc, argv);
 	
 	if (results.version)
@@ -300,6 +335,95 @@ int main (int argc, char** argv)
 		
 		WEXPR_ERROR_FREE (err);
 		
+		// do schema validation if needed
+		if (results.schemaID != "")
+		{
+			auto schemaID = results.schemaID;
+			if (schemaID == "(internal)")
+			{
+				auto rootType = wexpr_Expression_type(expr);
+				if (rootType != WexprExpressionTypeMap)
+				{
+					std::cerr << "WexprTool: Using schema (internal) but root wasn't a map" << std::endl;
+					return EXIT_FAILURE;
+				}
+				
+				auto schemaValue = wexpr_Expression_mapValueForKey(expr, "$schema");
+				if (schemaValue == nullptr)
+				{
+					std::cerr << "WexprTool: Using schema (internal) but $schema didn't exist on the root map." << std::endl;
+					return EXIT_FAILURE;
+				}
+
+				if (wexpr_Expression_type(schemaValue) != WexprExpressionTypeValue)
+				{
+					std::cerr << "WexprTool: Using schema (internal) but $schema wasn't a value on the root map." << std::endl;
+					return EXIT_FAILURE;
+				}
+
+				schemaID = std::string(wexpr_Expression_value(schemaValue));
+			}
+
+			WexprSchemaSchema_Callbacks callbacks = {};
+			callbacks.pathForSchemaID = [](void* pathForSchemaIDUserData, const char* schemaID) -> const char*
+			{
+				auto schemaMappings = reinterpret_cast<std::map<std::string, std::string>*> (pathForSchemaIDUserData);
+				auto iter = schemaMappings->find(schemaID);
+				if (iter != schemaMappings->end())
+					return iter->second.c_str();
+				
+				return nullptr;
+			};
+			callbacks.pathForSchemaIDUserData = &(results.schemaMappings);
+
+			WexprSchemaError* schemaError = nullptr;
+			WexprSchemaSchema* schema = wexprSchema_Schema_createFromSchemaID(
+				schemaID.c_str(),
+				&callbacks,
+				&schemaError
+			);
+
+			if (!schema || schemaError)
+			{
+				if (isValidate)
+				{
+					s_writeAllOutputTo(results.outputPath, "false\n");
+				}
+				else
+				{
+					std::cerr << "WexprTool: Error when loading schema for validation " << std::endl;
+					WexprSchemaError* serr = schemaError;
+					while (serr)
+					{
+						std::cerr << "WexprTool: "
+							<< wexprSchema_Error_objectPath(serr) << ": "
+							<< wexprSchema_Error_message(serr) << std::endl;
+						
+						serr = wexprSchema_Error_nextError(serr);
+					}
+				}
+				
+				return EXIT_FAILURE;
+			}
+
+			bool didValidate = wexprSchema_Schema_validateExpression(schema, expr, &schemaError);
+			if (!didValidate || schemaError)
+			{
+				if (isValidate)
+				{
+					s_writeAllOutputTo(results.outputPath, "false\n");
+				}
+				else
+				{
+					std::cerr << "WexprTool: Error when validating against schema " << std::endl;
+					
+					s_writeOutErrorWithIndent(schemaError, 0);
+				}
+
+				return EXIT_FAILURE;
+			}
+		}
+
 		if (isValidate)
 		{
 			s_writeAllOutputTo(results.outputPath, "true\n");

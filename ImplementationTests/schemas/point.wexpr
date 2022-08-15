@@ -1,0 +1,48 @@
+@(
+	$id "local://wexpr.hackerguild.com/libWexpr/ImplementationTests/schemas/point.wexpr"
+	$schema "https://wexpr.hackerguild.com/schemas/Core/v1.schema.wexpr"
+	title "Simple point schema for testing"
+	description "Schema for points"
+
+	$refs @(
+		; will provide the main Wexpr types
+		Wexpr "https://wexpr.hackerguild.com/schemas/Core/v1.schema.wexpr"
+	)
+
+	$types @(
+		; --- Enums
+
+		Point @(
+			type Wexpr::Map
+			description "A point"
+			mapAdditionalProperties false
+
+			mapProperties @(
+				$schema @(
+					type Wexpr::SchemaID
+					description "The Id of the schema"
+				)
+
+				x @(
+					type Wexpr::RealNumber
+					description "The X coordinate of the point"
+					required true
+				)
+
+				y @(
+					type Wexpr::RealNumber
+					description "The Y coordinate of the point"
+					required true
+				)
+
+				z @(
+					type Wexpr::RealNumber
+					description "The Z coordinate of the point"
+					required true
+				)
+			)
+		) ; Point
+	)
+
+	rootType Point
+)
