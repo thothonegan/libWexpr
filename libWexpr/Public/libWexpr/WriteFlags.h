@@ -41,7 +41,7 @@ LIBWEXPR_EXTERN_C_BEGIN()
 //
 /// \brief These flags alter writing of wexpr strings.
 //
-typedef int8_t WexprWriteFlags;
+typedef uint8_t WexprWriteFlags;
 
 enum
 {
