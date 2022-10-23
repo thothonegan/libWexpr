@@ -4,7 +4,7 @@
 #
 
 if (CATALYST_INSTALL_PREFIX)
-	catalyst_project (libWexprSchemaTests DEPENDS libWexpr)
+	catalyst_project (libWexprSchemaTests DEPENDS libWexprSchema)
 else ()
 	project (libWexprSchemaTests)
 	set (CatalystProject_libWexprSchemaTests_ENABLE ON)
