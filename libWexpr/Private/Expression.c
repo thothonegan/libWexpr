@@ -635,10 +635,10 @@ static int s_copyToHash (any_t hashToWriteTo, any_t data)
 	return MAP_OK; // continue
 }
 
-// Copy an expression into self. self should be null cause we dont cleanup ourself atm.
+// Copy an expression into self. self should be null because we don't clean up ourselves atm.
+// NOLINTNEXTLINE(misc-no-recursion)
 static void s_Expression_copyInto (WexprExpression* self, WexprExpression* rhs)
 {
-	
 	// copy recursively
 	switch (wexpr_Expression_type(rhs))
 	{
@@ -695,6 +695,7 @@ static void s_Expression_copyInto (WexprExpression* self, WexprExpression* rhs)
 
 // returns the part of the buffer remaining
 // will load into self, setting up everything. Assumes we're empty/null to start.
+// NOLINTNEXTLINE(misc-no-recursion)
 static WexprBuffer s_Expression_parseFromBinaryChunk (WexprExpression* self, WexprBuffer data, WexprError* error)
 {
 	
@@ -930,6 +931,7 @@ static WexprBuffer s_Expression_parseFromBinaryChunk (WexprExpression* self, Wex
 
 // returns the part of the string remaining
 // will load into self, setting up everything. Assumes we're empty/null to start.
+// NOLINTNEXTLINE(misc-no-recursion)
 static PrivateStringRef s_Expression_parseFromString (WexprExpression* self, PrivateStringRef str, WexprParseFlags parseFlags,
 	PrivateParserState* parserState, WexprError* error)
 {
@@ -2372,7 +2374,7 @@ static int s_getValueAtIndex (any_t userData, any_t data)
 
 const char* wexpr_Expression_mapKeyAt (WexprExpression* self, size_t index)
 {
-	if (self->m_type != WexprExpressionTypeMap)
+	if (!self || self->m_type != WexprExpressionTypeMap)
 	{ return NULL; } // not a map
 	
 	PrivateGetKeyValueAtIndex val;
@@ -2386,7 +2388,7 @@ const char* wexpr_Expression_mapKeyAt (WexprExpression* self, size_t index)
 
 WexprExpression* wexpr_Expression_mapValueAt (WexprExpression* self, size_t index)
 {
-	if (self->m_type != WexprExpressionTypeMap)
+	if (!self || self->m_type != WexprExpressionTypeMap)
 	{ return NULL; } // not a map
 		
 	PrivateGetKeyValueAtIndex val;
@@ -2400,7 +2402,7 @@ WexprExpression* wexpr_Expression_mapValueAt (WexprExpression* self, size_t inde
 
 WexprExpression* wexpr_Expression_mapValueForKey (WexprExpression* self, const char* key)
 {
-	if (self->m_type != WexprExpressionTypeMap)
+	if (!self || self->m_type != WexprExpressionTypeMap)
 	{ return NULL; } // not a map
 	
 	WexprExpressionPrivateMapElement* elem = NULL;
@@ -2430,7 +2432,7 @@ WexprExpression* wexpr_Expression_mapValueForLengthKey (WexprExpression* self, c
 
 void wexpr_Expression_mapSetValueForKey (WexprExpression* self, const char* key, WexprExpression* value)
 {
-	if (self->m_type != WexprExpressionTypeMap)
+	if (!self || self->m_type != WexprExpressionTypeMap)
 	{ return; }
 	
 	WexprExpressionPrivateMapElement* elem = malloc (sizeof(WexprExpressionPrivateMapElement));
@@ -2442,7 +2444,7 @@ void wexpr_Expression_mapSetValueForKey (WexprExpression* self, const char* key,
 
 void wexpr_Expression_mapSetValueForKeyLengthString (WexprExpression* self, const char* key, size_t length, WexprExpression* value)
 {
-	if (self->m_type != WexprExpressionTypeMap)
+	if (!self || self->m_type != WexprExpressionTypeMap)
 	{ return; }
 	
 	WexprExpressionPrivateMapElement* elem = malloc (sizeof(WexprExpressionPrivateMapElement));
