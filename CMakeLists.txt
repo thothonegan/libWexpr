@@ -17,7 +17,7 @@ set (CMAKE_C_STANDARD_REQUIRED YES)
 
 # NOTE: If change, must change in libWexpr.h too. Someday should use configure or something.
 set (LIBWEXPR_VERSION_MAJOR 1)
-set (LIBWEXPR_VERSION_MINOR 0)
+set (LIBWEXPR_VERSION_MINOR 1)
 set (LIBWEXPR_VERSION_PATCH 0)
 
 if (CATALYST_INSTALL_PREFIX) # use catalyst on top of cmake
