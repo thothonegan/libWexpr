@@ -4,8 +4,8 @@
 
 	dependencies #(
 		@(type "repository" name "Catalyst")
-		@(type "repository" name "External-Curl")
-		@(type "repository" name "External-Onigmo")
+		@(type "repository" name "External-Curl"   revision "v7.83.1")
+		@(type "repository" name "External-Onigmo" revision "v6.1.3-9")
 	)
 	
 	runCommands @(
